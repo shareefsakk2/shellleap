@@ -49,7 +49,6 @@ async function updateDownloadButtons() {
     const REPO_URL = `https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/download/v${version}`;
     const os = detectOS();
     const heroBtn = document.getElementById('download-btn-hero');
-    const ctaBtn = document.getElementById('download-btn-cta');
 
     const config = {
         windows: {
@@ -72,30 +71,31 @@ async function updateDownloadButtons() {
 
     const settings = config[os] || config.unknown;
 
-    [heroBtn, ctaBtn].forEach(btn => {
-        if (btn) {
-            const textSpan = btn.querySelector('.btn-text');
-            if (textSpan) textSpan.innerText = settings.text;
-            btn.href = `${REPO_URL}/${settings.file}`;
-        }
-    });
+    if (heroBtn) {
+        const textSpan = heroBtn.querySelector('.btn-text');
+        if (textSpan) textSpan.innerText = settings.text;
+        heroBtn.href = `${REPO_URL}/${settings.file}`;
+    }
 }
+document.addEventListener('DOMContentLoaded', () => {
+    updateDownloadButtons();
 
-// Mobile Menu Toggle
-const mobileToggle = document.getElementById('mobile-toggle');
-const navMenu = document.getElementById('nav-menu');
+    // Mobile Menu Toggle
+    const mobileToggle = document.getElementById('mobile-toggle');
+    const navMenu = document.getElementById('nav-menu');
 
-if (mobileToggle && navMenu) {
-    mobileToggle.addEventListener('click', () => {
-        navMenu.classList.toggle('active');
-    });
-
-    // Close menu when clicking a link
-    navMenu.querySelectorAll('a').forEach(link => {
-        link.addEventListener('click', () => {
-            navMenu.classList.remove('active');
+    if (mobileToggle && navMenu) {
+        mobileToggle.addEventListener('click', () => {
+            navMenu.classList.toggle('active');
         });
-    });
-}
+
+        // Close menu when clicking a link
+        navMenu.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => {
+                navMenu.classList.remove('active');
+            });
+        });
+    }
+});
 
 console.log('ShellLeap Landing Page Initialized');
