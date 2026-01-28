@@ -84,8 +84,9 @@ async function createWindow() {
     }
 
     // Use the high-quality branding icons from the build folder
+    // app.getAppPath() points to project root in dev, and app.asar in prod
     const iconExt = process.platform === 'win32' ? 'ico' : 'png';
-    const iconPath = path.join(__dirname, '..', '..', 'build', `icon.${iconExt}`);
+    const iconPath = path.join(app.getAppPath(), 'build', `icon.${iconExt}`);
 
     mainWindow = new BrowserWindow({
         width: 1200,

@@ -64,7 +64,8 @@
         "deb",
         "AppImage"
       ],
-      "category": "Utility"
+      "category": "Utility",
+      "icon": "build/icons"
     },
     "mac": {
       "target": [
