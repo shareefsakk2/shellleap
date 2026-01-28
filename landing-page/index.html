@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/png" href="/logo.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Pre-load Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <script src="https://unpkg.com/feather-icons"></script>
+  <title>ShellLeap - The Modern SSH Client</title>
+</head>
+
+<body>
+  <!-- Premium Background -->
+  <div class="background-wrapper">
+    <div class="grid-overlay"></div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+  </div>
+
+  <!-- Main Container used for Top Sections -->
+  <div class="container">
+    <nav>
+      <a href="#" class="logo">
+        <img src="/logo.png" alt="ShellLeap" style="width: 32px; height: 32px; object-fit: contain;">
+        ShellLeap
+      </a>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#how-it-works">How it Works</a>
+        <a href="https://github.com/avinash-legal/shell-leap" target="_blank">GitHub</a>
+      </div>
+    </nav>
+
+    <section class="hero">
+      <h1>
+        The terminal interface<br>
+        you've always wanted.
+      </h1>
+      <p>
+        Managing servers shouldn't feel like archaeology.
+        Experience a beautiful, blazing fast SSH client designed for the modern era.
+      </p>
+
+      <div class="hero-buttons">
+        <a href="#" class="btn btn-primary">
+          <i data-feather="download"></i> Download Beta
+        </a>
+        <a href="https://github.com/avinash-legal/shell-leap" target="_blank" class="btn btn-secondary">
+          <i data-feather="star"></i> Star on GitHub
+        </a>
+      </div>
+    </section>
+
+    <section id="features" class="features-section">
+      <div class="features-header">
+        <h2>Crafted for Performance</h2>
+        <p>Every pixel and packet optimized for your workflow.</p>
+      </div>
+
+      <div class="grid" id="card-grid">
+        <!-- Card 1 -->
+        <div class="card">
+          <div class="icon">
+            <i data-feather="layers"></i>
+          </div>
+          <h3>Persistent Sessions</h3>
+          <p>Your workspace is sacred. ShellLeap keeps your sessions alive across network drops and app restarts. Never
+            lose your context again.</p>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="card">
+          <div class="icon">
+            <i data-feather="folder"></i>
+          </div>
+          <h3>Visual SFTP</h3>
+          <p>Drag, drop, done. A full fidelity file manager lives right next to your terminal. Uploading assets is now
+            as easy as moving files locally.</p>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="card">
+          <div class="icon">
+            <i data-feather="shield"></i>
+          </div>
+          <h3>Tunneling Made Easy</h3>
+          <p>Complex port forwarding and jump hosts configured in seconds. Securely access private databases without the
+            CLI headache.</p>
+        </div>
+
+        <!-- Card 4 -->
+        <div class="card">
+          <div class="icon">
+            <i data-feather="key"></i>
+          </div>
+          <h3>Smart Keychain</h3>
+          <p>One identity, everywhere. Manage your SSH keys securely and map them to multiple hosts effortlessly.</p>
+        </div>
+
+        <!-- Card 5 -->
+        <div class="card">
+          <div class="icon">
+            <i data-feather="zap"></i>
+          </div>
+          <h3>Rust Powered</h3>
+          <p>Under the hood lies a high-performance Rust core, ensuring your terminal renders at 60fps and connects in
+            milliseconds.</p>
+        </div>
+
+        <!-- Card 6 -->
+        <div class="card">
+          <div class="icon">
+            <i data-feather="moon"></i>
+          </div>
+          <h3>Dark Mode Native</h3>
+          <p>Designed for the night owls. A carefully calibrated dark theme that is easy on the eyes during those
+            late-night debugging sessions.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="how-it-works" class="workflow-section">
+      <div class="features-header">
+        <h2>Effortless Workflow</h2>
+        <p>From zero to connected in seconds.</p>
+      </div>
+      <div class="step-grid">
+        <div class="step">
+          <div class="step-number">01</div>
+          <h3>Import Keys</h3>
+          <p style="color:var(--text-muted)">Import your existing SSH keys or generate new ones securely within the
+            Keychain.</p>
+        </div>
+        <div class="step">
+          <div class="step-number">02</div>
+          <h3>Add Host</h3>
+          <p style="color:var(--text-muted)">Define your host, link your identity, and optionally configure a jump host.
+          </p>
+        </div>
+        <div class="step">
+          <div class="step-number">03</div>
+          <h3>Connect</h3>
+          <p style="color:var(--text-muted)">One click to launch a persistent terminal session with implicit SFTP.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta-section">
+      <div class="cta-box">
+        <h2>Ready to upgrade your workflow?</h2>
+        <div class="hero-buttons" style="margin-bottom:0">
+          <a href="#" class="btn btn-primary">
+            <i data-feather="download"></i> Download for Linux
+          </a>
+        </div>
+      </div>
+    </section>
+  </div> <!-- End Main Container -->
+
+  <!-- Footer Outside Container for Full Width -->
+  <footer>
+    <div class="container footer-content">
+      <div class="footer-socials">
+        <a href="#"><i data-feather="twitter"></i></a>
+        <a href="https://github.com/avinash-legal/shell-leap"><i data-feather="github"></i></a>
+        <a href="#"><i data-feather="mail"></i></a>
+      </div>
+      <p>&copy; 2026 ShellLeap. Open Source under MIT License.</p>
+    </div>
+  </footer>
+
+  <script type="module" src="/main.js"></script>
+  <script>
+    feather.replace();
+  </script>
+</body>
+
+</html>
