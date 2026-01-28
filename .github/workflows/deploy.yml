@@ -33,7 +33,7 @@ jobs:
 
       - name: Install Dependencies
         working-directory: landing-page
-        run: npm ci
+        run: npm install
 
       - name: Build
         working-directory: landing-page
