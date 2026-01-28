@@ -9,23 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  create-release:
-    runs-on: ubuntu-latest
-    outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
-    steps:
-      - name: Create Release
-        id: create_release
-        uses: softprops/action-gh-release@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          draft: true
-          prerelease: false
-          generate_release_notes: true
-
   build:
-    needs: create-release
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -46,15 +30,56 @@ jobs:
         run: npm install
 
       - name: Build and Package
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # We build but DO NOT publish here to avoid race conditions and triple release notes
         run: |
           npm run build
           if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
-            npx electron-builder build --linux --publish always
+            npx electron-builder build --linux --dir
+            npx electron-builder build --linux
           elif [ "${{ matrix.os }}" == "macos-latest" ]; then
-            npx electron-builder build --macos --publish always
+            npx electron-builder build --macos
           else
-            npx electron-builder build --windows --publish always
+            npx electron-builder build --windows
           fi
         shell: bash
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts-${{ matrix.os }}
+          path: |
+            dist/build/*.deb
+            dist/build/*.AppImage
+            dist/build/*.dmg
+            dist/build/*.exe
+            dist/build/*.zip
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist/release
+          pattern: release-artifacts-*
+          merge-multiple: true
+
+      - name: Create Release and Upload
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: RELEASE_NOTES.md
+          files: |
+            dist/release/*.deb
+            dist/release/*.AppImage
+            dist/release/*.dmg
+            dist/release/*.exe
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
