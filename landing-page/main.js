@@ -81,6 +81,21 @@ async function updateDownloadButtons() {
     });
 }
 
-document.addEventListener('DOMContentLoaded', updateDownloadButtons);
+// Mobile Menu Toggle
+const mobileToggle = document.getElementById('mobile-toggle');
+const navMenu = document.getElementById('nav-menu');
+
+if (mobileToggle && navMenu) {
+    mobileToggle.addEventListener('click', () => {
+        navMenu.classList.toggle('active');
+    });
+
+    // Close menu when clicking a link
+    navMenu.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', () => {
+            navMenu.classList.remove('active');
+        });
+    });
+}
 
 console.log('ShellLeap Landing Page Initialized');

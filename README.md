@@ -14,6 +14,15 @@ ShellLeap is a next-generation terminal and file manager designed for modern Dev
 *   **🚇 Effortless Tunneling**: Configure Jump Hosts (Bastion) and complex port forwarding in seconds. Access private databases and internal services without the configuration headache.
 *   **🎨 Premium Dark UI**: A distraction-free, glassmorphic interface designed for focus and clarity during long coding sessions.
 
+## 💻 Cross-Platform Support
+
+ShellLeap is built to run everywhere you work:
+*   **🐧 Linux**: Available as `.deb` and `.AppImage`.
+*   **🍎 macOS**: Native `.dmg` support (Intel & Apple Silicon).
+*   **🪟 Windows**: Portable `.exe` setup.
+
+Download the latest version for your platform from the [Releases Page](https://github.com/shareefsakk2/shellleap/releases).
+
 ## 🛠️ Technology Stack
 
 *   **Runtime**: [Electron](https://www.electronjs.org/) (Main Process)
@@ -54,16 +63,20 @@ ShellLeap is a next-generation terminal and file manager designed for modern Dev
 
 ### Building for Production
 
-To create a distributable package for your OS (Linux provided here):
+To create a distributable package for your specific OS:
 
 ```bash
+# General production build
 npm run build
+
+# Package for all platforms
+npx electron-builder build --linux --macos --windows
 ```
 
 This will:
 1.  Build the Next.js app (static export).
 2.  Compile the Electron TypeScript code.
-3.  Package the application into a `.deb`, `.AppImage`, or other format depending on your OS configuration in `electron-builder.yml` (or `package.json`).
+3.  Package the application into `.deb`, `.AppImage`, `.dmg`, or `.exe` formats based on your configuration.
 
 ## 🤝 Contributing
 
