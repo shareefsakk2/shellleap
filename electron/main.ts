@@ -90,7 +90,7 @@ async function createWindow() {
         frame: false,
         backgroundColor: '#111827',
         show: false, // Don't show until ready
-        icon: path.join(__dirname, '../../build/icon.png'), // Explicitly set icon
+        icon: path.join(__dirname, `../../build/icon.${process.platform === 'win32' ? 'ico' : 'png'}`), // Platform-aware icon
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
             nodeIntegration: false,
