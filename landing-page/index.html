@@ -58,6 +58,7 @@
       <div class="nav-links">
         <a href="#features">Features</a>
         <a href="#how-it-works">How it Works</a>
+        <a href="#support">Support</a>
         <a href="https://github.com/shareefsakk2/shellleap" target="_blank">GitHub</a>
       </div>
     </nav>
@@ -177,6 +178,32 @@
       </div>
     </section>
 
+    <section id="support" class="support-section">
+      <div class="features-header">
+        <h2>Support ShellLeap</h2>
+        <p>ShellLeap is open source and built with passion. Your support helps us keep the project independent and
+          thriving.</p>
+      </div>
+
+      <div class="hero-buttons">
+        <a href="https://buymeacoffee.com/shareefsakk" target="_blank" class="btn btn-primary"
+          style="background: linear-gradient(135deg, #FFDD00, #F7931E); color: #000000;">
+          <i data-feather="coffee"></i> Buy us a Coffee
+        </a>
+      </div>
+
+      <div class="crypto-disclosure" style="margin-top: 30px; opacity: 0.6; font-size: 0.85rem;">
+        <p>Looking to tip via Crypto? <a href="#crypto" id="crypto-trigger"
+            style="color: var(--primary); text-decoration: underline;">Click here</a></p>
+        <div id="crypto-addresses"
+          style="display: none; margin-top: 15px; padding: 20px; background: rgba(255,255,255,0.03); border-radius: 16px; border: 1px dashed var(--border-glass);">
+          <p style="margin-bottom: 5px;">BTC: <code
+              style="color: white; font-family: monospace;">bc1q...project_address</code></p>
+          <p>ETH/USDT: <code style="color: white; font-family: monospace;">0x...project_address</code></p>
+        </div>
+      </div>
+    </section>
+
     <section class="cta-section">
       <div class="cta-box">
         <h2>Ready to upgrade your workflow?</h2>
@@ -205,6 +232,16 @@
   <script type="module" src="/main.js"></script>
   <script>
     feather.replace();
+
+    // Toggle Crypto Support
+    const cryptoTrigger = document.getElementById('crypto-trigger');
+    const cryptoAddresses = document.getElementById('crypto-addresses');
+    if (cryptoTrigger && cryptoAddresses) {
+      cryptoTrigger.addEventListener('click', (e) => {
+        e.preventDefault();
+        cryptoAddresses.style.display = cryptoAddresses.style.display === 'none' ? 'block' : 'none';
+      });
+    }
   </script>
 </body>
 
