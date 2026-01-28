@@ -1,5 +1,5 @@
 export default {
-    base: '/shell-leap/', // Repository name for GitHub Pages
+    base: '/shellleap/', // Repository name for GitHub Pages
     build: {
         outDir: 'dist'
     }
