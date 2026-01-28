@@ -48,7 +48,7 @@
   "build": {
     "appId": "com.shareef.shellleap",
     "productName": "ShellLeap",
-    "icon": "build/icon.png",
+    "icon": "build/",
     "directories": {
       "output": "dist/build"
     },

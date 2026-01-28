@@ -9,4 +9,5 @@ contextBridge.exposeInMainWorld('electron', {
         ipcRenderer.removeListener(channel, listener),
     storageRead: (key: string) => ipcRenderer.invoke('storage-read', key),
     storageWrite: (key: string, value: any) => ipcRenderer.invoke('storage-write', key, value),
+    pathSep: process.platform === 'win32' ? '\\' : '/',
 });

@@ -307,4 +307,14 @@ export function setupSFTPHandlers() {
             return { success: false, error: err.message };
         }
     });
+
+    // Path Utilities (Local)
+    ipcMain.handle('local-path-join', async (event, ...parts: string[]) => {
+        return join(...parts);
+    });
+
+    ipcMain.handle('local-path-parent', async (event, currentPath: string) => {
+        const { dirname } = require('path');
+        return dirname(currentPath);
+    });
 }
