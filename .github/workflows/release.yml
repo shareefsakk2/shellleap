@@ -31,6 +31,8 @@ jobs:
 
       - name: Build and Package
         # We build but DO NOT publish here to avoid race conditions and triple release notes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           npm run build
           if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
