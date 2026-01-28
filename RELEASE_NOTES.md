@@ -1,27 +1,23 @@
-# 🚀 ShellLeap v0.1.0 - The Secure Frontier
+# 🚀 ShellLeap v0.1.1 - The Cross-Platform Evolution
 
-We are thrilled to announce the first official release of **ShellLeap**, the advanced SSH & SFTP client designed for speed, security, and a premium user experience.
+We are excited to announce **ShellLeap v0.1.1**, a major milestone that brings native support to all major desktop operating systems and significant stability improvements to our core services.
 
 ### ✨ What's New
-*   **🔐 Military-Grade Vault**: All your server credentials and private keys are now protected by industry-standard **AES-256-GCM encryption**.
-*   **🔑 Seamless OS Integration**: Set your master password once, and ShellLeap will securely remember it using your system's hardware-backed keychain (GNOME Keyring/KWallet).
-*   **📁 Advanced SFTP Management**: Full support for file transfers, directory management, and high-fidelity file permissions (Chmod).
-*   **💻 Redesigned Terminal**: Optimized terminal re-attachment logic for a perfect, lag-free session history when switching views.
-*   **🎨 Premium UI/UX**: Replaced all native browser popups with custom, high-fidelity dark-themed modals for a consistent, professional feel.
+*   **💻 native Cross-Platform Support**: ShellLeap is now officially available for **Windows (EXE)**, **macOS (DMG)**, and **Linux (DEB/AppImage)**.
+*   **🎨 High-Fidelity Branding**: Added professional, high-resolution icons across all platforms for a premium desktop experience.
+*   **📂 Windows SFTP Native Pathing**: Completely refactored the local file system layer to handle Windows paths, drive letters, and backslashes natively. No more broken "Go Up" navigation!
+*   **🔄 Smarter Remote Navigation**: Fixed a critical issue where the local file path would reset when browsing remote server directories.
+*   **🛡️ Enhanced Stability**: Resolved Windows-specific build errors (`ERR_UNSUPPORTED_ESM_URL_SCHEME`) and optimized the CI/CD pipeline for faster, more reliable releases.
 
-### 🛡️ Security First
-Your security is our priority. With this release, we've implemented a **Zero-Knowledge** architecture:
-- Your master password is never stored on disk.
-- Data is only decrypted in memory when needed.
-- Local storage is fully encrypted, ensuring your keys stay private even if your hardware is compromised.
+### 🌐 UI & Experience
+*   **📱 Mobile-Responsive Landing Page**: Our home on the web now features a premium, glassmorphic mobile navigation menu.
+*   **🚀 Dynamic OS Detection**: The website now automatically detects your operating system and highlights the correct download for you.
+*   **🎯 Brand Continuity**: Synchronized our "ShellLeap" multicolor branding and accent underlines across the application and landing page.
 
-### 📦 Installation (Linux)
-1. Download the `shell-leap_0.1.0_amd64.deb` package.
-2. Install via terminal:
-   ```bash
-   sudo apt install ./shell-leap_0.1.0_amd64.deb
-   ```
-3. Launch ShellLeap and secure your vault!
+### 📦 Installation
+- **Windows**: Download and run the `.exe` installer.
+- **macOS**: Download the `.dmg`, open it, and drag ShellLeap to your Applications folder.
+- **Linux**: Download the `.deb` and install via `sudo apt install ./shell-leap_0.1.1_amd64.deb`.
 
 ---
-*Thank you for being part of the ShellLeap journey. Step into the future of remote management.*
+*Thank you for supporting ShellLeap. We're bridging the gap between your local machine and your remote servers, one platform at a time.*
