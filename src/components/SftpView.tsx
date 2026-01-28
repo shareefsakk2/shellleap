@@ -60,7 +60,7 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
     }, [activeHostId, sessionId]);
 
     useEffect(() => {
-        // Initial local list
+        // Initial local list only on mount
         listLocal('');
 
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -76,6 +76,16 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
             }
         };
 
+        window.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('mousedown', handleClickOutside);
+
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
+    useEffect(() => {
         const handleSyncStatus = (_: any, data: any) => {
             if (data.id === sessionId) {
                 if (data.status === 'synced') {
@@ -88,13 +98,8 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
         };
 
         window.electron.on('sftp-sync-status', handleSyncStatus);
-        window.addEventListener('keydown', handleKeyDown);
-        window.addEventListener('mousedown', handleClickOutside);
-
         return () => {
             window.electron.off('sftp-sync-status', handleSyncStatus);
-            window.removeEventListener('keydown', handleKeyDown);
-            window.removeEventListener('mousedown', handleClickOutside);
         };
     }, [sessionId, remotePath]);
 
@@ -200,20 +205,22 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
         listRemote(sessionId, parent);
     };
 
-    const goLocalUp = () => {
-        // Simple parent resolution
-        const parts = localPath.split('/').filter(Boolean);
-        parts.pop();
-        const parent = parts.length > 0 ? '/' + parts.join('/') : '/';
+    const goLocalUp = async () => {
+        const parent = await window.electron.invoke('local-path-parent', localPath);
         listLocal(parent);
     };
 
-    const handleDragStart = (e: React.DragEvent, file: FileEntry, source: 'local' | 'remote') => {
+    const handleDragStart = async (e: React.DragEvent, file: FileEntry, source: 'local' | 'remote') => {
         e.dataTransfer.setData('source', source);
         e.dataTransfer.setData('fileName', file.name);
-        e.dataTransfer.setData('fullPath', source === 'local'
-            ? `${localPath}/${file.name}`
-            : (remotePath === '/' ? `/${file.name}` : `${remotePath}/${file.name}`));
+
+        let fullPath = '';
+        if (source === 'local') {
+            fullPath = await window.electron.invoke('local-path-join', localPath, file.name);
+        } else {
+            fullPath = remotePath === '/' ? `/${file.name}` : `${remotePath}/${file.name}`;
+        }
+        e.dataTransfer.setData('fullPath', fullPath);
     };
 
     const handleDrop = async (e: React.DragEvent, target: 'local' | 'remote') => {
@@ -244,8 +251,7 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
             }
         } else {
             // Download: Remote -> Local
-            // Naive join
-            const dest = `${localPath}/${fileName}`;
+            const dest = await window.electron.invoke('local-path-join', localPath, fileName);
 
             const res = await window.electron.invoke('sftp-download', {
                 id: sessionId,
@@ -337,9 +343,9 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
                                     onDragStart={(e) => handleDragStart(e, f, 'local')}
                                     onContextMenu={(e) => onContextMenu(e, f, 'local')}
                                     className="flex items-center gap-2 p-1 hover:bg-gray-800 rounded cursor-pointer text-sm text-gray-300 select-none group"
-                                    onDoubleClick={() => {
+                                    onDoubleClick={async () => {
                                         if (f.type === 'd') {
-                                            const newPath = localPath === '/' ? `/${f.name}` : `${localPath}/${f.name}`;
+                                            const newPath = await window.electron.invoke('local-path-join', localPath, f.name);
                                             console.log('Navigating local to:', newPath);
                                             listLocal(newPath);
                                         }
@@ -423,8 +429,9 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
                     {/* Open / Edit */}
                     {menu.type === 'local' ? (
                         <button
-                            onClick={() => {
-                                window.electron.invoke('open-path', { path: `${localPath}/${menu.file?.name}` });
+                            onClick={async () => {
+                                const path = await window.electron.invoke('local-path-join', localPath, menu.file?.name);
+                                window.electron.invoke('open-path', { path });
                                 setMenu(prev => ({ ...prev, visible: false }));
                             }}
                             className="w-full text-left px-4 py-2 text-sm flex items-center gap-2 hover:bg-gray-700 text-gray-200 hover:text-white"
@@ -467,9 +474,11 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
                                 callback: async (newName) => {
                                     if (newName && newName !== oldName) {
                                         if (menu.type === 'local') {
+                                            const oldPath = await window.electron.invoke('local-path-join', localPath, oldName);
+                                            const newPath = await window.electron.invoke('local-path-join', localPath, newName);
                                             await window.electron.invoke('local-rename', {
-                                                oldPath: `${localPath}/${oldName}`,
-                                                newPath: `${localPath}/${newName}`
+                                                oldPath,
+                                                newPath
                                             });
                                             listLocal(localPath);
                                         } else {
@@ -496,10 +505,11 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
                                 type: 'chmod',
                                 title: 'Change Permissions (Octal)',
                                 value: '755',
-                                callback: (mode) => {
+                                callback: async (mode) => {
                                     if (mode) {
                                         if (menu.type === 'local') {
-                                            window.electron.invoke('local-chmod', { path: `${localPath}/${menu.file?.name}`, mode });
+                                            const path = await window.electron.invoke('local-path-join', localPath, menu.file?.name);
+                                            window.electron.invoke('local-chmod', { path, mode });
                                         } else {
                                             window.electron.invoke('sftp-chmod', { id: sessionId, path: remotePath === '/' ? `/${menu.file?.name}` : `${remotePath}/${menu.file?.name}`, mode });
                                         }
@@ -520,7 +530,8 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
                                 value: menu.file?.name,
                                 callback: async () => {
                                     if (menu.type === 'local') {
-                                        await window.electron.invoke('local-delete', { path: `${localPath}/${menu.file?.name}` });
+                                        const path = await window.electron.invoke('local-path-join', localPath, menu.file?.name);
+                                        await window.electron.invoke('local-delete', { path });
                                         listLocal(localPath);
                                     } else {
                                         await window.electron.invoke('sftp-delete', { id: sessionId, path: remotePath === '/' ? `/${menu.file?.name}` : `${remotePath}/${menu.file?.name}`, isDir: menu.file?.type === 'd' });
@@ -573,6 +584,6 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
                     </div>
                 </div>
             )}
-        </div>
+        </div >
     );
 }
