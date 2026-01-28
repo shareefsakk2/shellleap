@@ -33,7 +33,7 @@ ShellLeap is a next-generation terminal and file manager designed for modern Dev
 
 1.  **Clone the repository**
     ```bash
-    git clone https://github.com/shareefsakk/shellleap.git
+    git clone https://github.com/shareefsakk2/shellleap.git
     cd shellleap
     ```
 
