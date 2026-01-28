@@ -124,8 +124,22 @@ nav {
     gap: 12px;
 }
 
+.logo-container {
+    display: flex;
+    flex-direction: column;
+    line-height: 1;
+}
+
 .logo-text .accent {
     color: #FF6A00;
+}
+
+.logo-underline {
+    height: 2px;
+    width: 42px;
+    background-color: var(--primary);
+    border-radius: 100px;
+    margin-top: 2px;
 }
 
 .logo img {
