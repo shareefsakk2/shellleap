@@ -6,9 +6,24 @@ on:
       - 'v*'
 
 jobs:
-  release:
-    runs-on: ${{ matrix.os }}
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          draft: true
+          prerelease: false
+          generate_release_notes: true
 
+  build:
+    needs: create-release
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
@@ -30,14 +45,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          npm run build
           if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
-            npm run build
             npx electron-builder build --linux --publish always
           elif [ "${{ matrix.os }}" == "macos-latest" ]; then
-            npm run build
             npx electron-builder build --macos --publish always
           else
-            npm run build
             npx electron-builder build --windows --publish always
           fi
         shell: bash
