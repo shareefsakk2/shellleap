@@ -192,16 +192,6 @@
         </a>
       </div>
 
-      <div class="crypto-disclosure" style="margin-top: 30px; opacity: 0.6; font-size: 0.85rem;">
-        <p>Looking to tip via Crypto? <a href="#crypto" id="crypto-trigger"
-            style="color: var(--primary); text-decoration: underline;">Click here</a></p>
-        <div id="crypto-addresses"
-          style="display: none; margin-top: 15px; padding: 20px; background: rgba(255,255,255,0.03); border-radius: 16px; border: 1px dashed var(--border-glass);">
-          <p style="margin-bottom: 5px;">BTC: <code
-              style="color: white; font-family: monospace;">bc1q...project_address</code></p>
-          <p>ETH/USDT: <code style="color: white; font-family: monospace;">0x...project_address</code></p>
-        </div>
-      </div>
     </section>
 
     <section class="cta-section">
@@ -232,16 +222,6 @@
   <script type="module" src="/main.js"></script>
   <script>
     feather.replace();
-
-    // Toggle Crypto Support
-    const cryptoTrigger = document.getElementById('crypto-trigger');
-    const cryptoAddresses = document.getElementById('crypto-addresses');
-    if (cryptoTrigger && cryptoAddresses) {
-      cryptoTrigger.addEventListener('click', (e) => {
-        e.preventDefault();
-        cryptoAddresses.style.display = cryptoAddresses.style.display === 'none' ? 'block' : 'none';
-      });
-    }
   </script>
 </body>
 
