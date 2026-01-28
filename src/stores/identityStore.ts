@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 
 export type IdentityType = 'password' | 'key' | 'agent';
 
@@ -18,6 +18,8 @@ interface IdentityState {
     removeIdentity: (id: string) => void;
 }
 
+import electronStorage from '@/utils/electronStorage';
+
 export const useIdentityStore = create<IdentityState>()(
     persist(
         (set) => ({
@@ -32,6 +34,7 @@ export const useIdentityStore = create<IdentityState>()(
         }),
         {
             name: 'identity-storage',
+            storage: createJSONStorage(() => electronStorage),
         }
     )
 );

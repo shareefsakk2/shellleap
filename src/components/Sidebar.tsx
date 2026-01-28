@@ -18,8 +18,14 @@ export function Sidebar() {
         <aside className="w-64 flex flex-col py-4 bg-gray-950 border-r border-gray-800 shrink-0 h-full">
             <div className="mb-6 px-4">
                 <div className="flex items-center gap-3">
-                    <img src="/logo.png" alt="ShellLeap" className="w-10 h-10 object-contain" />
-                    <span className="font-bold text-gray-100 text-lg">ShellLeap</span>
+                    <img src="/logo.png" alt="ShellLeap" className="w-8 h-8 object-contain" />
+                    <div className="flex flex-col">
+                        <span className="font-bold text-lg leading-tight tracking-tight">
+                            <span className="text-white">Shell</span>
+                            <span className="text-[#FF6A00]">Leap</span>
+                        </span>
+                        <div className="h-0.5 w-8 bg-indigo-500 rounded-full"></div>
+                    </div>
                 </div>
             </div>
 
@@ -28,12 +34,12 @@ export function Sidebar() {
                     <Layers size={18} />
                     <span>Sessions</span>
                 </Link>
-                <Link href="/hosts" className={linkClass("/hosts")}>
+                <Link href="/hosts/" className={linkClass("/hosts/")}>
                     <Terminal size={18} />
                     <span>Hosts</span>
                 </Link>
 
-                <Link href="/keychain" className={linkClass("/keychain")}>
+                <Link href="/keychain/" className={linkClass("/keychain/")}>
                     <Key size={18} />
                     <span>Keychain</span>
                 </Link>

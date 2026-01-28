@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useHostStore } from '@/stores/hostStore';
 import { useIdentityStore } from '@/stores/identityStore';
-import { FileText, Folder, ArrowRight, ArrowLeft, RefreshCw, Upload, Download, Edit2, Trash2 } from 'lucide-react';
+import { FileText, Folder, ArrowRight, ArrowLeft, RefreshCw, Upload, Download, Edit2, Trash2, Key } from 'lucide-react';
 
 interface FileEntry {
     name: string;
@@ -45,6 +45,13 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
     const [menu, setMenu] = useState<MenuState>({ visible: false, x: 0, y: 0, file: null, type: 'local' });
     const menuRef = useRef<HTMLDivElement>(null);
 
+    const [dialog, setDialog] = useState<{
+        type: 'rename' | 'chmod' | 'delete',
+        title: string,
+        value?: string,
+        callback: (value?: string) => void
+    } | null>(null);
+
     // Auto-connect effect
     useEffect(() => {
         if (activeHostId && sessionId && status === 'Disconnected') {
@@ -69,13 +76,27 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
             }
         };
 
+        const handleSyncStatus = (_: any, data: any) => {
+            if (data.id === sessionId) {
+                if (data.status === 'synced') {
+                    setStatus(`Synced: ${data.remotePath.split('/').pop()}`);
+                    listRemote(sessionId, remotePath); // Refresh to show new mtime/size
+                } else if (data.status === 'error') {
+                    setStatus(`Sync Error: ${data.error}`);
+                }
+            }
+        };
+
+        window.electron.on('sftp-sync-status', handleSyncStatus);
         window.addEventListener('keydown', handleKeyDown);
         window.addEventListener('mousedown', handleClickOutside);
+
         return () => {
+            window.electron.off('sftp-sync-status', handleSyncStatus);
             window.removeEventListener('keydown', handleKeyDown);
             window.removeEventListener('mousedown', handleClickOutside);
         };
-    }, []);
+    }, [sessionId, remotePath]);
 
     const listLocal = async (path: string) => {
         try {
@@ -157,7 +178,8 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
         const res = await window.electron.invoke('sftp-connect', { id: sessionId, config });
         if (res.success) {
             setStatus('Connected');
-            listRemote(sessionId, '.');
+            // Re-list current path if re-attached, otherwise root
+            listRemote(sessionId, res.reattached ? remotePath : '.');
         } else {
             setStatus('Failed: ' + res.error);
         }
@@ -398,7 +420,8 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
                     <div className="px-4 py-1.5 text-xs text-gray-500 border-b border-gray-700 mb-1 truncate">
                         {menu.file.name}
                     </div>
-                    {menu.type === 'local' && (
+                    {/* Open / Edit */}
+                    {menu.type === 'local' ? (
                         <button
                             onClick={() => {
                                 window.electron.invoke('open-path', { path: `${localPath}/${menu.file?.name}` });
@@ -408,35 +431,103 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
                         >
                             <FileText size={14} /> Open
                         </button>
+                    ) : (
+                        menu.file.type === '-' && (
+                            <button
+                                onClick={async () => {
+                                    setMenu(prev => ({ ...prev, visible: false }));
+                                    setStatus('Opening for edit...');
+                                    const res = await window.electron.invoke('sftp-open-remote', {
+                                        id: sessionId,
+                                        remotePath: remotePath === '/' ? `/${menu.file?.name}` : `${remotePath}/${menu.file?.name}`,
+                                        fileName: menu.file?.name
+                                    });
+                                    if (res.success) {
+                                        setStatus('Editing: ' + menu.file?.name);
+                                    } else {
+                                        setStatus('Failed to open: ' + res.error);
+                                    }
+                                }}
+                                className="w-full text-left px-4 py-2 text-sm flex items-center gap-2 hover:bg-gray-700 text-gray-200 hover:text-white"
+                            >
+                                <Edit2 size={14} /> Edit Remote
+                            </button>
+                        )
                     )}
+
+                    {/* Rename */}
                     <button
-                        onClick={() => {
-                            const mode = prompt('Enter new mode (e.g. 755):', '755');
-                            if (mode) {
-                                if (menu.type === 'local') {
-                                    window.electron.invoke('local-chmod', { path: `${localPath}/${menu.file?.name}`, mode: parseInt(mode, 8) });
-                                } else {
-                                    window.electron.invoke('sftp-chmod', { id: sessionId, path: remotePath === '/' ? `/${menu.file?.name}` : `${remotePath}/${menu.file?.name}`, mode: parseInt(mode, 8) });
-                                }
-                            }
+                        onClick={async () => {
+                            const oldName = menu.file?.name;
                             setMenu(prev => ({ ...prev, visible: false }));
+                            setDialog({
+                                type: 'rename',
+                                title: 'Rename File',
+                                value: oldName,
+                                callback: async (newName) => {
+                                    if (newName && newName !== oldName) {
+                                        if (menu.type === 'local') {
+                                            await window.electron.invoke('local-rename', {
+                                                oldPath: `${localPath}/${oldName}`,
+                                                newPath: `${localPath}/${newName}`
+                                            });
+                                            listLocal(localPath);
+                                        } else {
+                                            await window.electron.invoke('sftp-rename', {
+                                                id: sessionId,
+                                                oldPath: remotePath === '/' ? `/${oldName}` : `${remotePath}/${oldName}`,
+                                                newPath: remotePath === '/' ? `/${newName}` : `${remotePath}/${newName}`
+                                            });
+                                            listRemote(sessionId, remotePath);
+                                        }
+                                    }
+                                }
+                            });
                         }}
                         className="w-full text-left px-4 py-2 text-sm flex items-center gap-2 hover:bg-gray-700 text-gray-200 hover:text-white"
                     >
-                        <Edit2 size={14} /> Permissions
+                        <Folder size={14} /> Rename
+                    </button>
+
+                    <button
+                        onClick={() => {
+                            setMenu(prev => ({ ...prev, visible: false }));
+                            setDialog({
+                                type: 'chmod',
+                                title: 'Change Permissions (Octal)',
+                                value: '755',
+                                callback: (mode) => {
+                                    if (mode) {
+                                        if (menu.type === 'local') {
+                                            window.electron.invoke('local-chmod', { path: `${localPath}/${menu.file?.name}`, mode });
+                                        } else {
+                                            window.electron.invoke('sftp-chmod', { id: sessionId, path: remotePath === '/' ? `/${menu.file?.name}` : `${remotePath}/${menu.file?.name}`, mode });
+                                        }
+                                    }
+                                }
+                            });
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm flex items-center gap-2 hover:bg-gray-700 text-gray-200 hover:text-white"
+                    >
+                        <Key size={14} /> Permissions
                     </button>
                     <button
                         onClick={async () => {
-                            if (confirm(`Delete ${menu.file?.name}?`)) {
-                                if (menu.type === 'local') {
-                                    await window.electron.invoke('local-delete', { path: `${localPath}/${menu.file?.name}` });
-                                    listLocal(localPath);
-                                } else {
-                                    await window.electron.invoke('sftp-delete', { id: sessionId, path: remotePath === '/' ? `/${menu.file?.name}` : `${remotePath}/${menu.file?.name}`, isDir: menu.file?.type === 'd' });
-                                    listRemote(sessionId, remotePath);
-                                }
-                            }
                             setMenu(prev => ({ ...prev, visible: false }));
+                            setDialog({
+                                type: 'delete',
+                                title: 'Confirm Deletion',
+                                value: menu.file?.name,
+                                callback: async () => {
+                                    if (menu.type === 'local') {
+                                        await window.electron.invoke('local-delete', { path: `${localPath}/${menu.file?.name}` });
+                                        listLocal(localPath);
+                                    } else {
+                                        await window.electron.invoke('sftp-delete', { id: sessionId, path: remotePath === '/' ? `/${menu.file?.name}` : `${remotePath}/${menu.file?.name}`, isDir: menu.file?.type === 'd' });
+                                        listRemote(sessionId, remotePath);
+                                    }
+                                }
+                            });
                         }}
                         className="w-full text-left px-4 py-2 text-sm flex items-center gap-2 hover:bg-gray-700 text-red-400 hover:text-red-300"
                     >
@@ -444,6 +535,43 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
                     </button>
                 </div>,
                 document.body
+            )}
+
+            {/* Sftp Navigation/Action Dialog */}
+            {dialog && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                    <div className="bg-gray-800 border border-gray-700 rounded-xl shadow-2xl w-full max-w-sm overflow-hidden p-6 animate-in fade-in zoom-in duration-200">
+                        <h3 className="text-lg font-semibold text-gray-100 mb-4">{dialog.title}</h3>
+
+                        {(dialog.type === 'rename' || dialog.type === 'chmod') ? (
+                            <form onSubmit={(e) => {
+                                e.preventDefault();
+                                dialog.callback(dialog.value);
+                                setDialog(null);
+                            }} className="space-y-4">
+                                <input
+                                    autoFocus
+                                    type="text"
+                                    value={dialog.value}
+                                    onChange={(e) => setDialog({ ...dialog, value: e.target.value })}
+                                    className="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                />
+                                <div className="flex justify-end gap-2">
+                                    <button type="button" onClick={() => setDialog(null)} className="px-3 py-1.5 text-xs text-gray-400 hover:text-white">Cancel</button>
+                                    <button type="submit" className="px-4 py-1.5 text-xs bg-indigo-600 hover:bg-indigo-500 text-white rounded font-medium">Confirm</button>
+                                </div>
+                            </form>
+                        ) : (
+                            <div className="space-y-4">
+                                <p className="text-sm text-gray-300">Are you sure you want to delete <span className="text-white font-mono">{dialog.value}</span>?</p>
+                                <div className="flex justify-end gap-2">
+                                    <button onClick={() => setDialog(null)} className="px-3 py-1.5 text-xs text-gray-400 hover:text-white">Cancel</button>
+                                    <button onClick={() => { dialog.callback(); setDialog(null); }} className="px-4 py-1.5 text-xs bg-red-600 hover:bg-red-500 text-white rounded font-medium">Delete</button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
             )}
         </div>
     );

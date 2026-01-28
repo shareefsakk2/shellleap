@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #111827;
+  --foreground: #ededed;
 }
 
 @theme inline {
@@ -12,17 +12,19 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+body {
+  background-color: #111827;
+  /* Match Electron window background to prevent flashing */
+  color: #ededed;
+  font-family: Arial, Helvetica, sans-serif;
+  overflow: hidden;
+  /* Prevent scrollbars during transitions */
+  user-select: none;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+input,
+textarea {
+  user-select: text;
 }
 
 *:focus {
@@ -37,4 +39,28 @@ body {
 
 .no-drag-region {
   -webkit-app-region: no-drag;
+}
+
+/* Custom Sleek Scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(75, 85, 99, 0.4);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(75, 85, 99, 0.8);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(75, 85, 99, 0.4) transparent;
 }

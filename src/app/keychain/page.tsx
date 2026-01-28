@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useIdentityStore } from '@/stores/identityStore';
 import { useHostStore } from '@/stores/hostStore';
 import { Plus, Key, MoreVertical, Trash2, Edit2, Monitor } from 'lucide-react';
@@ -9,11 +9,24 @@ import { IdentityForm } from '@/components/IdentityForm';
 import { ContextMenu } from '@/components/ContextMenu';
 
 export default function KeychainPage() {
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
     const identities = useIdentityStore((state: any) => state.identities);
     const removeIdentity = useIdentityStore((state: any) => state.removeIdentity);
     const hosts = useHostStore((state: any) => state.hosts);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingIdentity, setEditingIdentity] = useState<any>(null);
+    const [deleteConfirm, setDeleteConfirm] = useState<any>(null);
+
+    const handleDelete = () => {
+        if (deleteConfirm) {
+            removeIdentity(deleteConfirm.id);
+            setDeleteConfirm(null);
+        }
+    };
 
     return (
         <div className="flex flex-col h-full bg-gray-900 text-gray-100">
@@ -90,11 +103,7 @@ export default function KeychainPage() {
                                             label: 'Delete',
                                             icon: <Trash2 size={14} />,
                                             danger: true,
-                                            onClick: () => {
-                                                if (confirm('Are you sure you want to delete this identity?')) {
-                                                    removeIdentity(identity.id);
-                                                }
-                                            }
+                                            onClick: () => setDeleteConfirm(identity)
                                         }
                                     ]}
                                 />
@@ -114,6 +123,24 @@ export default function KeychainPage() {
                     onClose={() => setIsModalOpen(false)}
                 />
             </Modal>
-        </div >
+
+            {/* Delete Confirmation Modal */}
+            <Modal
+                isOpen={!!deleteConfirm}
+                onClose={() => setDeleteConfirm(null)}
+                title="Confirm Deletion"
+            >
+                <div className="space-y-4">
+                    <p className="text-gray-300">
+                        Are you sure you want to delete identity <span className="text-white font-semibold">"{deleteConfirm?.label}"</span>?
+                        This will NOT delete the actual private key files if they are on disk.
+                    </p>
+                    <div className="flex justify-end gap-3 mt-6">
+                        <button onClick={() => setDeleteConfirm(null)} className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors">Cancel</button>
+                        <button onClick={handleDelete} className="px-6 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg transition-all font-medium text-sm">Delete</button>
+                    </div>
+                </div>
+            </Modal>
+        </div>
     );
 }

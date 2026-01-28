@@ -14,6 +14,7 @@ export function HostForm({ onClose, initialData }: HostFormProps) {
     const addHost = useHostStore((state: any) => state.addHost);
     const updateHost = useHostStore((state: any) => state.updateHost);
     const identities = useIdentityStore((state: any) => state.identities);
+    const groups = useHostStore((state: any) => state.groups);
 
     const [formData, setFormData] = useState<Partial<Host>>(
         initialData || {
@@ -99,20 +100,34 @@ export function HostForm({ onClose, initialData }: HostFormProps) {
                         </div>
                     </div>
                     <div className="relative">
-                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Identity</label>
-                        <div className="relative">
-                            <Lock className="absolute left-3 top-2.5 text-gray-500 w-4 h-4" />
-                            <select
-                                value={formData.identityId || ''}
-                                onChange={(e) => setFormData({ ...formData, identityId: e.target.value })}
-                                className="w-full bg-gray-800/50 border border-gray-700 rounded-lg py-2 pl-9 pr-3 text-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all appearance-none text-sm"
-                            >
-                                <option value="">Select Identity...</option>
-                                {identities.map((id: any) => (
-                                    <option key={id.id} value={id.id}>{id.label}</option>
-                                ))}
-                            </select>
-                        </div>
+                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Group</label>
+                        <select
+                            value={formData.groupId || ''}
+                            onChange={(e) => setFormData({ ...formData, groupId: e.target.value })}
+                            className="w-full bg-gray-800/50 border border-gray-700 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-sm h-[38px]"
+                        >
+                            <option value="">No Group</option>
+                            {groups.map((g: any) => (
+                                <option key={g.id} value={g.id}>{g.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+
+                <div className="relative">
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Identity</label>
+                    <div className="relative">
+                        <Lock className="absolute left-3 top-2.5 text-gray-500 w-4 h-4" />
+                        <select
+                            value={formData.identityId || ''}
+                            onChange={(e) => setFormData({ ...formData, identityId: e.target.value })}
+                            className="w-full bg-gray-800/50 border border-gray-700 rounded-lg py-2 pl-9 pr-3 text-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all appearance-none text-sm"
+                        >
+                            <option value="">Select Identity...</option>
+                            {identities.map((id: any) => (
+                                <option key={id.id} value={id.id}>{id.label}</option>
+                            ))}
+                        </select>
                     </div>
                 </div>
             </div>

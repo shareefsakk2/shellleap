@@ -52,3 +52,6 @@ dist
 openspec
 
 AGENTS.md
+
+# release script
+scripts/release.sh

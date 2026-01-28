@@ -6,14 +6,34 @@ import { Terminal } from '@/components/Terminal';
 import { SftpView } from '@/components/SftpView';
 import { X, Terminal as TerminalIcon, Folder } from 'lucide-react';
 import clsx from 'clsx';
-import { useEffect } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
 export function SessionWorkspace() {
     const sessions = useSessionStore((state) => state.sessions);
     const activeSessionId = useSessionStore((state) => state.activeSessionId);
-    console.log('SessionWorkspace sessions:', sessions);
     const setActiveSession = useSessionStore((state) => state.setActiveSession);
     const removeSession = useSessionStore((state) => state.removeSession);
+
+    const prevSessionsRef = useRef<typeof sessions>([]);
+
+    useEffect(() => {
+        // Detect closed sessions and disconnect them in backend
+        const prevSessions = prevSessionsRef.current;
+        const currentIds = new Set(sessions.map(s => s.id));
+
+        prevSessions.forEach(ps => {
+            if (!currentIds.has(ps.id)) {
+                console.log(`[SessionWorkspace] Session ${ps.id} closed. Disconnecting ${ps.type}...`);
+                if (ps.type === 'ssh') {
+                    window.electron.invoke('ssh-disconnect', { id: ps.id });
+                } else {
+                    window.electron.invoke('sftp-disconnect', { id: ps.id });
+                }
+            }
+        });
+
+        prevSessionsRef.current = sessions;
+    }, [sessions]);
 
     // If no sessions, show empty state
     if (sessions.length === 0) {

@@ -7,4 +7,6 @@ contextBridge.exposeInMainWorld('electron', {
         ipcRenderer.on(channel, listener),
     off: (channel: string, listener: (...args: any[]) => void) =>
         ipcRenderer.removeListener(channel, listener),
+    storageRead: (key: string) => ipcRenderer.invoke('storage-read', key),
+    storageWrite: (key: string, value: any) => ipcRenderer.invoke('storage-write', key, value),
 });

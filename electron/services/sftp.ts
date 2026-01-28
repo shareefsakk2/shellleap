@@ -71,9 +71,14 @@ export function setupSFTPHandlers() {
     // Connect SFTP
     ipcMain.handle('sftp-connect', async (event, { id, config }) => {
         try {
+            // Re-use session if still connected
+            if (sftpSessions.has(id)) {
+                console.log(`[SFTP] Re-using existing session for ${id}`);
+                return { success: true, reattached: true };
+            }
+
             const resolvedConfig = await resolveConfigKeys(config);
 
-            // Establish potential tunnel
             const { socket, jumpConn } = await establishConnection(resolvedConfig);
 
             const sftp = new Client();
@@ -189,12 +194,73 @@ export function setupSFTPHandlers() {
         }
     });
 
+    // Remote Rename
+    ipcMain.handle('sftp-rename', async (event, { id, oldPath, newPath }) => {
+        const session = sftpSessions.get(id);
+        if (!session) return { success: false, error: 'No active session' };
+        try {
+            await session.sftp.rename(oldPath, newPath);
+            return { success: true };
+        } catch (err: any) {
+            return { success: false, error: err.message };
+        }
+    });
+
+    // Local Rename
+    ipcMain.handle('local-rename', async (event, { oldPath, newPath }) => {
+        try {
+            const fs = require('fs/promises');
+            await fs.rename(oldPath, newPath);
+            return { success: true };
+        } catch (err: any) {
+            return { success: false, error: err.message };
+        }
+    });
+
+    const watchers = new Map<string, any>();
+
+    // Open Remote File and Sync Changes
+    ipcMain.handle('sftp-open-remote', async (event, { id, remotePath, fileName }) => {
+        const session = sftpSessions.get(id);
+        if (!session) return { success: false, error: 'No active session' };
+        try {
+            const fs = require('fs');
+            const os = require('os');
+            const { shell } = require('electron');
+            const tempDir = join(os.tmpdir(), 'shellleap_sync_' + id);
+            if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+            const localPath = join(tempDir, fileName);
+            await session.sftp.get(remotePath, localPath);
+            await shell.openPath(localPath);
+            const watcherKey = `${id}:${remotePath}`;
+            if (watchers.has(watcherKey)) watchers.get(watcherKey).close();
+            let isSyncing = false;
+            const watcher = fs.watch(localPath, async (eventType: string) => {
+                if (eventType === 'change' && !isSyncing) {
+                    isSyncing = true;
+                    try {
+                        await new Promise(r => setTimeout(r, 500));
+                        await session.sftp.put(localPath, remotePath);
+                        event.sender.send('sftp-sync-status', { id, remotePath, status: 'synced' });
+                    } catch (e: any) {
+                        event.sender.send('sftp-sync-status', { id, remotePath, status: 'error', error: e.message });
+                    } finally { isSyncing = false; }
+                }
+            });
+            watchers.set(watcherKey, watcher);
+            return { success: true, localPath };
+        } catch (err: any) {
+            return { success: false, error: err.message };
+        }
+    });
+
     // Remote Chmod
     ipcMain.handle('sftp-chmod', async (event, { id, path, mode }) => {
         const session = sftpSessions.get(id);
         if (!session) return { success: false, error: 'No active session' };
         try {
-            await session.sftp.chmod(path, mode);
+            const finalMode = typeof mode === 'string' ? parseInt(mode, 8) : mode;
+            await session.sftp.chmod(path, finalMode);
             return { success: true };
         } catch (err: any) {
             return { success: false, error: err.message };
@@ -219,7 +285,9 @@ export function setupSFTPHandlers() {
     // Local Chmod
     ipcMain.handle('local-chmod', async (event, { path, mode }) => {
         try {
-            await import('fs/promises').then(fs => fs.chmod(path, mode));
+            const fs = require('fs/promises');
+            const finalMode = typeof mode === 'string' ? parseInt(mode, 8) : mode;
+            await fs.chmod(path, finalMode);
             return { success: true };
         } catch (err: any) {
             return { success: false, error: err.message };

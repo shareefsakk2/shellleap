@@ -1,12 +1,11 @@
 'use client';
 
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useHostStore } from '@/stores/hostStore';
 import { useSessionStore } from '@/stores/sessionStore';
-import { SessionWorkspace } from '@/components/SessionWorkspace';
-import { useEffect, useRef } from 'react';
 
-export default function Page() {
+function PageContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const hostId = searchParams.get('connect');
@@ -18,7 +17,6 @@ export default function Page() {
         if (hostId && !processedRef.current) {
             const host = hosts.find((h: any) => h.id === hostId);
             if (host) {
-                // Add SSH session
                 addSession({
                     id: crypto.randomUUID(),
                     type: 'ssh',
@@ -26,11 +24,18 @@ export default function Page() {
                     label: host.label,
                 });
                 processedRef.current = true;
-                // Clear query param to avoid re-adding on soft navs
                 router.replace('/');
             }
         }
     }, [hostId, hosts, addSession, router]);
 
     return null;
+}
+
+export default function Page() {
+    return (
+        <Suspense fallback={null}>
+            <PageContent />
+        </Suspense>
+    );
 }

@@ -3,6 +3,7 @@ import { ipcMain } from 'electron';
 
 // Simple in-memory map of active sessions
 const sessions = new Map<string, Client>();
+const buffers = new Map<string, string>();
 
 // Helper to connect a single client
 async function connectClient(config: any, sock?: any): Promise<Client> {
@@ -47,6 +48,12 @@ export function setupSSHHandlers() {
 
     ipcMain.handle('ssh-connect', async (event, { id, config }) => {
         try {
+            // Re-use session if already connected
+            if (sessions.has(id)) {
+                console.log(`[SSH] Re-using existing session for ${id}`);
+                return { success: true, reattached: true };
+            }
+
             const resolvedConfig = await resolveConfigKeys(config);
             console.log('[SSH] Connecting with config:', {
                 ...resolvedConfig,
@@ -83,10 +90,6 @@ export function setupSSHHandlers() {
 
             const conn = await establishConnection(resolvedConfig);
 
-            // Clean up existing session if any to avoid leaks/duplicates
-            if (sessions.has(id)) {
-                sessions.get(id)?.end();
-            }
             sessions.set(id, conn);
 
             // Handle Tunnels (Port Forwarding)
@@ -122,12 +125,22 @@ export function setupSSHHandlers() {
                 (conn as any)._stream = stream;
 
                 stream.on('data', (data: Buffer) => {
-                    event.sender.send(`ssh-data-${id}`, data.toString());
+                    const str = data.toString();
+                    // Keep a small buffer for re-attachment (100KB limit)
+                    let currentBuffer = buffers.get(id) || '';
+                    currentBuffer += str;
+                    if (currentBuffer.length > 102400) {
+                        currentBuffer = currentBuffer.substring(currentBuffer.length - 102400);
+                    }
+                    buffers.set(id, currentBuffer);
+
+                    event.sender.send(`ssh-data-${id}`, str);
                 });
 
                 stream.on('close', () => {
                     conn.end();
                     sessions.delete(id);
+                    buffers.delete(id);
                     event.sender.send(`ssh-closed-${id}`);
                 });
             });
@@ -160,7 +173,12 @@ export function setupSSHHandlers() {
         if (conn) {
             conn.end();
             sessions.delete(id);
+            buffers.delete(id);
         }
         return true;
+    });
+
+    ipcMain.handle('ssh-get-buffer', (event, { id }) => {
+        return buffers.get(id) || '';
     });
 }

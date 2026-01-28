@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 
 export interface Host {
     id: string;
@@ -31,7 +31,12 @@ interface HostState {
     updateHost: (id: string, host: Partial<Host>) => void;
     removeHost: (id: string) => void;
     addGroup: (group: Group) => void;
+    updateGroup: (id: string, group: Partial<Group>) => void;
+    removeGroup: (id: string) => void;
+    updateHosts: (ids: string[], updated: Partial<Host>) => void;
 }
+
+import electronStorage from '@/utils/electronStorage';
 
 export const useHostStore = create<HostState>()(
     persist(
@@ -43,12 +48,30 @@ export const useHostStore = create<HostState>()(
                 set((state) => ({
                     hosts: state.hosts.map((h) => (h.id === id ? { ...h, ...updated } : h)),
                 })),
+            updateHosts: (ids, updated) =>
+                set((state) => ({
+                    hosts: state.hosts.map((h) => (ids.includes(h.id) ? { ...h, ...updated } : h)),
+                })),
             removeHost: (id) =>
                 set((state) => ({ hosts: state.hosts.filter((h) => h.id !== id) })),
             addGroup: (group) => set((state) => ({ groups: [...state.groups, group] })),
+            updateGroup: (id, updated) =>
+                set((state) => ({
+                    groups: state.groups.map((g) => (g.id === id ? { ...g, ...updated } : g)),
+                })),
+            removeGroup: (id) =>
+                set((state) => {
+                    const groupToRemove = state.groups.find(g => g.id === id);
+                    return {
+                        groups: state.groups.filter((g) => g.id !== id),
+                        // Reset hosts in this group
+                        hosts: state.hosts.map(h => h.groupId === id ? { ...h, groupId: undefined } : h)
+                    };
+                }),
         }),
         {
             name: 'host-storage',
+            storage: createJSONStorage(() => electronStorage),
         }
     )
 );

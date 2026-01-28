@@ -148,6 +148,16 @@ export const Terminal: React.FC<TerminalProps> = ({ hostId, sessionId, active = 
 
                 if (!res.success) {
                     terminalRef.current?.writeln(`\r\nConnection failed: ${res.error}`);
+                } else if (res.reattached) {
+                    // Re-attachment logic: Restore buffer and clear breadcrumbs
+                    const buffer = await window.electron.invoke('ssh-get-buffer', { id: sessionId });
+                    if (isMounted && terminalRef.current) {
+                        terminalRef.current.clear(); // Clear the "Connecting..." breadcrumbs
+                        terminalRef.current.reset();
+                        terminalRef.current.write(buffer);
+                        // Focus the terminal
+                        terminalRef.current.focus();
+                    }
                 } else {
                     terminalRef.current?.writeln(`\r\nConnected.\r\n`);
                     terminalRef.current?.focus();
@@ -189,7 +199,7 @@ export const Terminal: React.FC<TerminalProps> = ({ hostId, sessionId, active = 
 
             // Let's implement the "Use sessionId" change first, as that fixes point 3 and 2.
             // Point 1 (reconnecting) requires Architectural change (Layout) as discussed.
-            window.electron.invoke('ssh-disconnect', { id: sessionId });
+            // Cleanup handled at SessionWorkspace level
         };
     }, [sessionId, hostId]);
     return <div ref={containerRef} className="h-full w-full overflow-hidden" />;

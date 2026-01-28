@@ -17,34 +17,39 @@ interface SessionState {
     setActiveSession: (id: string) => void;
 }
 
-export const useSessionStore = create<SessionState>((set) => ({
-    sessions: [],
-    activeSessionId: null,
+import { persist, createJSONStorage } from 'zustand/middleware';
+import electronStorage from '@/utils/electronStorage';
 
-    addSession: (session) => set((state) => {
-        // Check if session exists or logic to allow duplicates? 
-        // User said "multiple tabs", so duplicates allowed or at least distinct sessions.
-        // We push to array.
-        return {
-            sessions: [...state.sessions, session],
-            activeSessionId: session.id,
-        };
-    }),
+export const useSessionStore = create<SessionState>()(
+    persist(
+        (set) => ({
+            sessions: [],
+            activeSessionId: null,
 
-    removeSession: (id) => set((state) => {
-        const newSessions = state.sessions.filter((s) => s.id !== id);
-        let newActive = state.activeSessionId;
+            addSession: (session) => set((state) => ({
+                sessions: [...state.sessions, session],
+                activeSessionId: session.id,
+            })),
 
-        // If closing active, switch to last one or null
-        if (state.activeSessionId === id) {
-            newActive = newSessions.length > 0 ? newSessions[newSessions.length - 1].id : null;
+            removeSession: (id) => set((state) => {
+                const newSessions = state.sessions.filter((s) => s.id !== id);
+                let newActive = state.activeSessionId;
+
+                if (state.activeSessionId === id) {
+                    newActive = newSessions.length > 0 ? newSessions[newSessions.length - 1].id : null;
+                }
+
+                return {
+                    sessions: newSessions,
+                    activeSessionId: newActive,
+                };
+            }),
+
+            setActiveSession: (id) => set({ activeSessionId: id }),
+        }),
+        {
+            name: 'session-storage',
+            storage: createJSONStorage(() => electronStorage),
         }
-
-        return {
-            sessions: newSessions,
-            activeSessionId: newActive,
-        };
-    }),
-
-    setActiveSession: (id) => set({ activeSessionId: id }),
-}));
+    )
+);
