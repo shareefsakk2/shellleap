@@ -53,5 +53,8 @@ openspec
 
 AGENTS.md
 
+# release notes
+/RELEASE_NOTES.md
+
 # release script
 scripts/release.sh
