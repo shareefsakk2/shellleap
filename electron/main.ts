@@ -83,6 +83,10 @@ async function createWindow() {
         });
     }
 
+    // Use the high-quality branding icons from the build folder
+    const iconExt = process.platform === 'win32' ? 'ico' : 'png';
+    const iconPath = path.join(__dirname, '..', '..', 'build', `icon.${iconExt}`);
+
     mainWindow = new BrowserWindow({
         width: 1200,
         height: 800,
@@ -90,7 +94,7 @@ async function createWindow() {
         frame: false,
         backgroundColor: '#111827',
         show: false, // Don't show until ready
-        icon: path.join(__dirname, `../../build/icon.${process.platform === 'win32' ? 'ico' : 'png'}`), // Platform-aware icon
+        icon: iconPath,
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
             nodeIntegration: false,
