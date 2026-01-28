@@ -61,9 +61,21 @@
     "linux": {
       "maintainer": "Shareef <shareefsakk@gmail.com>",
       "target": [
-        "deb"
+        "deb",
+        "AppImage"
       ],
       "category": "Utility"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.developer-tools"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ]
     }
   }
 }

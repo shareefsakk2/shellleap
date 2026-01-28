@@ -281,7 +281,6 @@ h1 {
     transition: all 0.4s ease;
     position: relative;
     overflow: hidden;
-    group-hover: 1;
 }
 
 .card::before {
@@ -436,25 +435,56 @@ footer {
     color: var(--primary);
 }
 
-/* Responsive */
-@media (max-width: 768px) {
+/* Responsive Improvements */
+@media (max-width: 1024px) {
     h1 {
-        font-size: 3rem;
+        font-size: clamp(3rem, 8vw, 4.5rem);
+    }
+}
+
+@media (max-width: 768px) {
+    nav {
+        flex-direction: column;
+        gap: 20px;
+        padding: 20px 0;
     }
 
-    .grid {
-        grid-template-columns: 1fr;
+    .nav-links {
+        width: 100%;
+        justify-content: center;
+        gap: 15px;
+        padding: 8px 12px;
+    }
+
+    .hero {
+        padding: 100px 0 60px;
+    }
+
+    h1 {
+        font-size: 2.8rem;
     }
 
     .hero-buttons {
         flex-direction: column;
+        width: 100%;
+        max-width: 320px;
+        margin: 0 auto;
     }
 
     .btn {
         width: 100%;
     }
 
+    .grid {
+        grid-template-columns: 1fr;
+    }
+
     .step-grid {
-        gap: 60px;
+        grid-template-columns: 1fr;
+        gap: 40px;
+    }
+
+    .cta-box h2 {
+        font-size: 2rem;
     }
 }
