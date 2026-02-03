@@ -1,6 +1,6 @@
 {
   "name": "shell-leap",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Advanced SSH & SFTP Client",
   "author": "Shareef",
   "main": "dist/electron/main.js",

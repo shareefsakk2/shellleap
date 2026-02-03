@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useIdentityStore } from '@/stores/identityStore';
 import { useHostStore } from '@/stores/hostStore';
-import { Plus, Key, MoreVertical, Trash2, Edit2, Monitor } from 'lucide-react';
+import { Plus, Key, MoreVertical, Trash2, Edit2, Monitor, Search } from 'lucide-react';
 import { Modal } from '@/components/Modal';
 import { IdentityForm } from '@/components/IdentityForm';
 import { ContextMenu } from '@/components/ContextMenu';
@@ -20,6 +20,7 @@ export default function KeychainPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingIdentity, setEditingIdentity] = useState<any>(null);
     const [deleteConfirm, setDeleteConfirm] = useState<any>(null);
+    const [searchQuery, setSearchQuery] = useState('');
 
     const handleDelete = () => {
         if (deleteConfirm) {
@@ -29,84 +30,94 @@ export default function KeychainPage() {
     };
 
     return (
-        <div className="flex flex-col h-full bg-gray-900 text-gray-100">
-            <div className="p-6 border-b border-gray-800 flex justify-between items-center">
-                <h1 className="text-2xl font-bold">Keychain & Identities</h1>
-                <button
-                    onClick={() => { setEditingIdentity(null); setIsModalOpen(true); }}
-                    className="p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors shadow-lg shadow-indigo-500/20"
-                    title="New Identity"
-                >
-                    <Plus size={20} />
-                </button>
+        <div className="flex flex-col h-full bg-black text-[#EDEDED]">
+            <div className="px-8 py-8 flex justify-between items-end mb-4 border-b border-[#1C1C1E]">
+                <h1 className="text-4xl font-bold text-[#E5E5EA] tracking-tight">Keychain</h1>
+                <div className="flex gap-3 items-center">
+                    {/* Search Input */}
+                    <div className="relative">
+                        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8E8E93]" />
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Search identities..."
+                            className="pl-9 pr-4 py-2.5 bg-[#1C1C1E] border border-[#2C2C2E] rounded-full text-sm text-[#E5E5EA] placeholder:text-[#505055] focus:outline-none focus:border-[#3A3A3C] w-48 transition-all"
+                        />
+                    </div>
+                    <button
+                        onClick={() => { setEditingIdentity(null); setIsModalOpen(true); }}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-[#D4D4D4] hover:bg-[#E5E5E5] text-black rounded-full transition-all"
+                    >
+                        <Plus size={16} strokeWidth={3} />
+                        <span className="text-sm font-bold tracking-wide">New Identity</span>
+                    </button>
+                </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex-1 overflow-y-auto px-8 pb-8 custom-scrollbar">
                 {identities.length === 0 ? (
-                    <div className="text-center text-gray-500 mt-20">
-                        <Key size={48} className="mx-auto mb-4 opacity-50" />
+                    <div className="text-center text-[#8E8E93] mt-20">
+                        <Key size={48} className="mx-auto mb-4 opacity-20" />
                         <p className="text-lg">No identities found.</p>
                         <p className="text-sm">Create a reusable identity to easily connect to hosts.</p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {identities.map((identity: any) => (
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                        {identities.filter((identity: any) => identity.label.toLowerCase().includes(searchQuery.toLowerCase()) || (identity.username && identity.username.toLowerCase().includes(searchQuery.toLowerCase()))).map((identity: any) => (
                             <div
                                 key={identity.id}
-                                className="group flex items-start justify-between bg-gray-800 border border-transparent hover:border-indigo-500/50 rounded-xl p-4 transition-all duration-200"
+                                className="group relative bg-[#09090b] border border-[#1C1C1E] rounded-2xl p-6 transition-all duration-300 hover:border-[#3A3A3C] hover:shadow-2xl h-[180px] flex flex-col justify-between overflow-hidden"
                             >
+                                <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                    <ContextMenu
+                                        trigger={
+                                            <button className="text-[#8E8E93] hover:text-white transition-colors">
+                                                <MoreVertical size={18} />
+                                            </button>
+                                        }
+                                        items={[
+                                            {
+                                                label: 'Edit',
+                                                icon: <Edit2 size={14} />,
+                                                onClick: () => { setEditingIdentity(identity); setIsModalOpen(true); }
+                                            },
+                                            {
+                                                label: 'Delete',
+                                                icon: <Trash2 size={14} />,
+                                                danger: true,
+                                                onClick: () => setDeleteConfirm(identity)
+                                            }
+                                        ]}
+                                    />
+                                </div>
+
                                 <div className="flex items-start gap-4">
-                                    <div className="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center text-indigo-400 shrink-0">
-                                        <Key size={20} />
+                                    <div className="w-12 h-12 bg-[#1C1C1E] rounded-xl flex items-center justify-center text-[#8E8E93] group-hover:text-white transition-colors shrink-0">
+                                        <Key size={24} />
                                     </div>
                                     <div>
-                                        <h3 className="font-semibold text-gray-100">{identity.label}</h3>
-                                        <div className="flex items-center gap-2 text-xs text-gray-400">
-                                            <span className="uppercase bg-gray-700 px-1.5 py-0.5 rounded text-[10px]">{identity.type}</span>
-                                            <span>{identity.username || 'No default user'}</span>
+                                        <h3 className="font-bold text-[#E5E5EA] text-lg tracking-tight">{identity.label}</h3>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <span className="text-[10px] font-bold uppercase tracking-wider bg-[#1C1C1E] text-[#8E8E93] px-1.5 py-0.5 rounded">{identity.type}</span>
+                                            <span className="text-sm text-[#8E8E93] font-mono">{identity.username || 'No user'}</span>
                                         </div>
-                                        {(() => {
-                                            const usedBy = hosts.filter((h: any) => h.identityId === identity.id);
-                                            if (usedBy.length === 0) return null;
-                                            return (
-                                                <div className="mt-2 text-xs text-gray-500 flex items-start gap-1">
-                                                    <Monitor size={12} className="mt-0.5 shrink-0" />
-                                                    <div className="flex flex-wrap gap-1">
-                                                        {usedBy.slice(0, 3).map((h: any) => (
-                                                            <span key={h.id} className="bg-gray-700/50 px-1 rounded text-[10px]">
-                                                                {h.label}
-                                                            </span>
-                                                        ))}
-                                                        {usedBy.length > 3 && (
-                                                            <span className="text-[10px] opacity-70">+{usedBy.length - 3} more</span>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            );
-                                        })()}
                                     </div>
                                 </div>
 
-                                <ContextMenu
-                                    trigger={
-                                        <button className="text-gray-500 hover:text-white opacity-0 group-hover:opacity-100 transition-all p-2">
-                                            <MoreVertical size={16} />
-                                        </button>
-                                    }
-                                    items={[
-                                        {
-                                            label: 'Edit',
-                                            icon: <Edit2 size={14} />,
-                                            onClick: () => { setEditingIdentity(identity); setIsModalOpen(true); }
-                                        },
-                                        {
-                                            label: 'Delete',
-                                            icon: <Trash2 size={14} />,
-                                            danger: true,
-                                            onClick: () => setDeleteConfirm(identity)
-                                        }
-                                    ]}
-                                />
+                                <div className="border-t border-[#1C1C1E] pt-4 mt-2">
+                                    {(() => {
+                                        const usedBy = hosts.filter((h: any) => h.identityId === identity.id);
+                                        return (
+                                            <div className="flex items-center gap-2 text-[#505055]">
+                                                <Monitor size={14} />
+                                                <span className="text-xs font-medium">
+                                                    {usedBy.length === 0 ? 'Not used' : `Used by ${usedBy.length} host${usedBy.length === 1 ? '' : 's'}`}
+                                                </span>
+                                            </div>
+                                        );
+                                    })()}
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -131,13 +142,13 @@ export default function KeychainPage() {
                 title="Confirm Deletion"
             >
                 <div className="space-y-4">
-                    <p className="text-gray-300">
-                        Are you sure you want to delete identity <span className="text-white font-semibold">"{deleteConfirm?.label}"</span>?
+                    <p className="text-[#8E8E93]">
+                        Are you sure you want to delete identity <span className="text-white font-bold">"{deleteConfirm?.label}"</span>?
                         This will NOT delete the actual private key files if they are on disk.
                     </p>
                     <div className="flex justify-end gap-3 mt-6">
-                        <button onClick={() => setDeleteConfirm(null)} className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors">Cancel</button>
-                        <button onClick={handleDelete} className="px-6 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg transition-all font-medium text-sm">Delete</button>
+                        <button onClick={() => setDeleteConfirm(null)} className="px-5 py-2.5 text-sm text-[#8E8E93] hover:text-white transition-colors font-medium">Cancel</button>
+                        <button onClick={handleDelete} className="px-6 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-lg transition-all font-bold text-sm">Delete</button>
                     </div>
                 </div>
             </Modal>

@@ -51,7 +51,7 @@ export function ContextMenu({ items, trigger }: ContextMenuProps) {
             {isOpen && createPortal(
                 <div
                     ref={menuRef}
-                    className="fixed z-50 w-40 bg-gray-800 border border-gray-700 rounded-lg shadow-xl py-1 overflow-hidden animate-in fade-in zoom-in-95 duration-100"
+                    className="fixed z-50 w-40 bg-[#1C1C1E] border border-[#2C2C2E] rounded-lg shadow-xl py-1 overflow-hidden animate-in fade-in zoom-in-95 duration-100"
                     style={{ left: position.x, top: position.y }}
                 >
                     {items.map((item, idx) => (
@@ -62,7 +62,7 @@ export function ContextMenu({ items, trigger }: ContextMenuProps) {
                                 item.onClick();
                                 setIsOpen(false);
                             }}
-                            className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 hover:bg-gray-700 transition-colors ${item.danger ? 'text-red-400 hover:text-red-300' : 'text-gray-200 hover:text-white'}`}
+                            className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 hover:bg-[#2C2C2E] transition-colors ${item.danger ? 'text-red-400 hover:text-red-300' : 'text-[#E5E5EA] hover:text-white'}`}
                         >
                             {item.icon}
                             {item.label}

@@ -1,3 +1,25 @@
+# 🚀 ShellLeap v0.1.2 - UI Polish & Quality of Life
+
+We're thrilled to release **ShellLeap v0.1.2**, focused on visual refinements and usability improvements across the application.
+
+### ✨ What's New
+*   **🔍 Search in Hosts & Keychain**: Added search inputs to quickly filter hosts by label/address and identities by label/username.
+*   **📊 Host Connection Status**: Host cards now display a dynamic "Connected" or "Idle" badge based on active sessions.
+*   **🎨 Grayscale App Icons**: Unified visual style with grayscale logo in sidebar, unlock screen, and system tray.
+*   **📐 Tray Icon Padding**: Reduced tray icon size with transparent padding for a cleaner system tray appearance.
+
+### 🛠️ Fixes & Improvements
+*   **➕ Plus Button Menu**: Fixed context menu overflow when positioned near screen edge.
+*   **🔐 Unlock Screen Polish**: Updated app name styling to use monospace font matching sidebar branding.
+*   **🎯 Sidebar Refinements**: Improved spacing and visual consistency throughout the sidebar.
+
+### 📦 Installation
+- **Windows**: Download and run the `.exe` installer.
+- **macOS**: Download the `.dmg`, open it, and drag ShellLeap to your Applications folder.
+- **Linux**: Download the `.deb` and install via `sudo apt install ./shell-leap_0.1.2_amd64.deb`.
+
+---
+
 # 🚀 ShellLeap v0.1.1 - The Cross-Platform Evolution
 
 We are excited to announce **ShellLeap v0.1.1**, a major milestone that brings native support to all major desktop operating systems and significant stability improvements to our core services.

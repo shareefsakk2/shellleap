@@ -8,6 +8,7 @@ import { SearchAddon } from '@xterm/addon-search';
 import '@xterm/xterm/css/xterm.css';
 import { useHostStore, Host } from '@/stores/hostStore';
 import { useIdentityStore } from '@/stores/identityStore';
+import { useSettingsStore } from '@/stores/settingsStore';
 import { Autosuggest } from '@/utils/Autosuggest';
 import { Search, ChevronUp, ChevronDown, X } from 'lucide-react';
 import { SystemStats } from './SystemStats';
@@ -32,6 +33,10 @@ export const Terminal: React.FC<TerminalProps> = ({ hostId, sessionId, active = 
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
 
+    // Get settings from store
+    const terminalSettings = useSettingsStore((state) => state.settings.terminal);
+    const connectionSettings = useSettingsStore((state) => state.settings.connection);
+
     useEffect(() => {
         // Load defaults
         autosuggestRef.current.loadDefaults([
@@ -45,13 +50,14 @@ export const Terminal: React.FC<TerminalProps> = ({ hostId, sessionId, active = 
 
         const term = new XTerm({
             theme: {
-                background: '#111827', // Tailwind gray-900
-                foreground: '#F3F4F6', // Tailwind gray-100
+                background: '#000000',
+                foreground: '#E5E5EA',
                 cursor: '#ffffff',
             },
-            fontFamily: 'Menlo, Monaco, "Courier New", monospace',
-            fontSize: 14,
-            cursorBlink: true,
+            fontFamily: terminalSettings.fontFamily,
+            fontSize: terminalSettings.fontSize,
+            cursorBlink: terminalSettings.cursorBlink,
+            cursorStyle: terminalSettings.cursorStyle,
             allowProposedApi: true,
         });
 
@@ -89,6 +95,8 @@ export const Terminal: React.FC<TerminalProps> = ({ hostId, sessionId, active = 
 
             // Autosuggest Interaction
             if (arg.type === 'keydown') {
+                if (term.hasSelection()) return true; // Don't intercept if selecting
+
                 if (arg.code === 'ArrowRight' && suggestions.length > 0) {
                     // Apply suggestion
                     const rest = suggestions[0].slice(inputBufferRef.current.split(' ').pop()?.length || 0);
@@ -137,25 +145,19 @@ export const Terminal: React.FC<TerminalProps> = ({ hostId, sessionId, active = 
             const results = autosuggestRef.current.search(currentWord);
 
             // Only show if we have results and user typed at least 1 char matching
-            if (results.length > 0 && currentWord.length > 0 && results[0] !== currentWord && !isSearchOpen) {
+            if (results.length > 0 && currentWord.length > 0 && results[0] !== currentWord && !isSearchOpen && !term.hasSelection()) {
                 setSuggestions(results);
                 // Calculate position
                 if (term.buffer.active.cursorY < term.rows - 1) { // Avoid suggesting if at very bottom edge complications
-                    // Rough estimate: cursorX * charWidth
-                    // Since we use FitAddon, we need real DOM dimensions
-                    // Note: XTerm doesn't easily give pixel offset of cursor relative to container.
-                    // We can use cursorY * lineHeight
-                    // But we don't know lineHeight exactly without checking DOM.
-                    // Let's rely on fixed sizing assumption: 14px font ~ 17px line height?
-                    // Better: just show at bottom left or static place for v1.
-                    // Or retrieve renderer dimensions
+                    // Retrieve renderer dimensions
                     const renderer = (term as any)._core._renderService;
                     const charWidth = renderer.dimensions.actualCellWidth;
                     const lineHeight = renderer.dimensions.actualCellHeight;
 
+                    // Add padding offset (12px)
                     setSuggestionPos({
-                        x: term.buffer.active.cursorX * charWidth + 10,
-                        y: (term.buffer.active.cursorY + 1) * lineHeight
+                        x: term.buffer.active.cursorX * charWidth + 20, // +20 for padding + offset
+                        y: (term.buffer.active.cursorY + 1) * lineHeight + 12
                     });
                 }
             } else {
@@ -198,7 +200,16 @@ export const Terminal: React.FC<TerminalProps> = ({ hostId, sessionId, active = 
     useEffect(() => {
         if (!searchAddonRef.current) return;
         if (searchQuery) {
-            searchAddonRef.current.findNext(searchQuery, { incremental: true });
+            // Use findNext with decoration options to highlight all
+            searchAddonRef.current.findNext(searchQuery, {
+                incremental: true,
+                decorations: {
+                    matchOverviewRuler: '#d1d5db',
+                    activeMatchColorOverviewRuler: '#ffff00',
+                    matchBackground: '#3f3f46',
+                    activeMatchBackground: '#fcd34d'
+                }
+            });
         } else {
             searchAddonRef.current.clearDecorations();
         }
@@ -260,6 +271,8 @@ export const Terminal: React.FC<TerminalProps> = ({ hostId, sessionId, active = 
                     rows: dims?.rows || 24,
                     cols: dims?.cols || 80,
                     term: 'xterm-256color',
+                    readyTimeout: connectionSettings.timeout * 1000,
+                    keepaliveInterval: connectionSettings.keepAliveInterval * 1000,
                 };
                 const res = await window.electron.invoke('ssh-connect', { id: sessionId, config, options });
 
@@ -322,17 +335,29 @@ export const Terminal: React.FC<TerminalProps> = ({ hostId, sessionId, active = 
         };
     }, [sessionId, hostId]);
 
+    // Get host label for SystemStats
+    const hostLabel = useHostStore((state: any) => state.hosts.find((h: any) => h.id === hostId)?.label);
+
     return (
-        <div ref={containerRef} className="h-full w-full overflow-hidden relative group">
+        <div className="h-full w-full overflow-hidden relative group p-3 bg-black">
+            {/* Terminal Container */}
+            <div ref={containerRef} className="h-full w-full overflow-hidden rounded-xl border border-[#1C1C1E] bg-black"></div>
+
+            {/* System Stats */}
+            <SystemStats sessionId={sessionId} hostLabel={hostLabel} />
+
             {/* Autosuggest UI */}
             {suggestions.length > 0 && (
                 <div
-                    className="absolute z-50 bg-gray-800 border border-gray-700 shadow-xl rounded px-2 py-1 flex flex-col gap-0.5 animate-in fade-in zoom-in duration-75"
-                    style={{ left: suggestionPos.x, top: suggestionPos.y }}
+                    className="absolute z-50 bg-[#1C1C1E] border border-[#2C2C2E] shadow-2xl rounded-lg px-3 py-2 flex flex-col gap-1 animate-in fade-in zoom-in duration-75"
+                    style={{ left: suggestionPos.x + 12, top: suggestionPos.y + 12 }}
                 >
                     {suggestions.map((s, i) => (
-                        <div key={i} className={`text-xs font-mono ${i === 0 ? 'text-indigo-400 font-bold' : 'text-gray-500'}`}>
-                            {s} {i === 0 && <span className="opacity-50 text-[10px] ml-2">→</span>}
+                        <div key={i} className={`text-xs font-mono flex items-center gap-2 ${i === 0 ? 'text-blue-400 font-semibold' : 'text-[#8E8E93]'}`}>
+                            {i === 0 && <div className="w-1.5 h-1.5 rounded-full bg-blue-400"></div>}
+                            {i !== 0 && <div className="w-1.5 h-1.5 rounded-full bg-transparent"></div>}
+                            <span>{s}</span>
+                            {i === 0 && <span className="text-[#505055] text-[10px] ml-1">Tab to apply</span>}
                         </div>
                     ))}
                 </div>
@@ -340,7 +365,7 @@ export const Terminal: React.FC<TerminalProps> = ({ hostId, sessionId, active = 
 
             {/* Search UI */}
             {isSearchOpen && (
-                <div className="absolute top-2 right-2 z-50 bg-[#1f2937] border border-gray-700 rounded shadow-lg p-1 flex items-center gap-1 animate-in slide-in-from-top-2 duration-150">
+                <div className="absolute top-5 right-5 z-50 bg-[#1C1C1E] border border-[#2C2C2E] rounded-xl shadow-2xl p-2 flex items-center gap-2 animate-in slide-in-from-top-2 duration-150">
                     <div className="relative">
                         <input
                             autoFocus
@@ -352,8 +377,8 @@ export const Terminal: React.FC<TerminalProps> = ({ hostId, sessionId, active = 
                                     else searchAddonRef.current?.findNext(searchQuery);
                                 }
                             }}
-                            placeholder="Find..."
-                            className="bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs text-white w-32 focus:outline-none focus:border-indigo-500"
+                            placeholder="Find in terminal..."
+                            className="bg-black border border-[#2C2C2E] rounded-lg px-3 py-1.5 text-xs text-[#E5E5EA] w-40 focus:outline-none focus:ring-1 focus:ring-white/20"
                         />
                         {searchQuery && (
                             <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-500">
@@ -361,20 +386,20 @@ export const Terminal: React.FC<TerminalProps> = ({ hostId, sessionId, active = 
                             </span>
                         )}
                     </div>
-                    <div className="flex bg-gray-800 rounded border border-gray-700">
+                    <div className="flex bg-[#0A0A0A] rounded-lg border border-[#2C2C2E]">
                         <button
                             onClick={() => searchAddonRef.current?.findPrevious(searchQuery)}
-                            className="p-1 hover:bg-gray-700 text-gray-400 hover:text-white border-r border-gray-700"
+                            className="p-1.5 hover:bg-[#2C2C2E] text-[#8E8E93] hover:text-white rounded-l-lg transition-colors border-r border-[#2C2C2E]"
                             title="Previous (Shift+Enter)"
                         >
-                            <ChevronUp size={12} />
+                            <ChevronUp size={14} />
                         </button>
                         <button
                             onClick={() => searchAddonRef.current?.findNext(searchQuery)}
-                            className="p-1 hover:bg-gray-700 text-gray-400 hover:text-white"
+                            className="p-1.5 hover:bg-[#2C2C2E] text-[#8E8E93] hover:text-white rounded-r-lg transition-colors"
                             title="Next (Enter)"
                         >
-                            <ChevronDown size={12} />
+                            <ChevronDown size={14} />
                         </button>
                     </div>
                     <button
@@ -384,9 +409,9 @@ export const Terminal: React.FC<TerminalProps> = ({ hostId, sessionId, active = 
                             searchAddonRef.current?.clearDecorations();
                             terminalRef.current?.focus();
                         }}
-                        className="p-1 hover:bg-red-900/50 text-gray-500 hover:text-red-400 rounded transition-colors ml-1"
+                        className="p-1.5 hover:bg-red-500/10 text-[#8E8E93] hover:text-red-400 rounded-lg transition-colors"
                     >
-                        <X size={12} />
+                        <X size={14} />
                     </button>
                 </div>
             )}

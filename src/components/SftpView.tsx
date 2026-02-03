@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useHostStore } from '@/stores/hostStore';
 import { useIdentityStore } from '@/stores/identityStore';
+import { useSettingsStore } from '@/stores/settingsStore';
 import { FileText, Folder, ArrowRight, ArrowLeft, RefreshCw, Upload, Download, Edit2, Trash2, Key } from 'lucide-react';
 
 interface FileEntry {
@@ -28,18 +29,21 @@ interface MenuState {
 export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewProps & { sessionId: string }) {
     const hosts = useHostStore((state: any) => state.hosts);
     const identities = useIdentityStore((state: any) => state.identities);
+    const sftpSettings = useSettingsStore((state) => state.settings.sftp);
+    const connectionSettings = useSettingsStore((state) => state.settings.connection);
+
     const [activeHostId, setActiveHostId] = useState(initialHostId || '');
     // Remove local sessionId state, use prop
     const sessionId = propSessionId;
 
-    const [localPath, setLocalPath] = useState(''); // Default homedir
+    const [localPath, setLocalPath] = useState(sftpSettings.defaultLocalPath || ''); // Use setting
     const [remotePath, setRemotePath] = useState('.');
 
     const [localFiles, setLocalFiles] = useState<FileEntry[]>([]);
     const [remoteFiles, setRemoteFiles] = useState<FileEntry[]>([]);
 
     const [status, setStatus] = useState('Disconnected');
-    const [showHidden, setShowHidden] = useState(false);
+    const [showHidden, setShowHidden] = useState(sftpSettings.showHiddenFiles); // Use setting
 
     // Context Menu State
     const [menu, setMenu] = useState<MenuState>({ visible: false, x: 0, y: 0, file: null, type: 'local' });
@@ -232,7 +236,14 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
 
         setStatus('Connecting...');
         // Use the persistent session ID from props
-        const res = await window.electron.invoke('sftp-connect', { id: sessionId, config });
+        const res = await window.electron.invoke('sftp-connect', {
+            id: sessionId,
+            config,
+            options: {
+                readyTimeout: connectionSettings.timeout * 1000,
+                keepaliveInterval: connectionSettings.keepAliveInterval * 1000,
+            }
+        });
         if (res.success) {
             setStatus('Connected');
             // Re-list current path if re-attached, otherwise root
@@ -342,9 +353,9 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
 
 
     return (
-        <div className="flex flex-col h-full relative">
-            {/* Toolbar */}
-            <div className="h-12 border-b border-gray-800 flex items-center px-4 gap-4 bg-gray-900">
+        <div className="flex flex-col h-full relative bg-black">
+            {/* Modern Toolbar */}
+            <div className="h-14 border-b border-[#1C1C1E] flex items-center px-5 gap-4 bg-black">
                 <select
                     value={activeHostId}
                     onChange={async (e) => {
@@ -354,7 +365,7 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
                         }
                         setActiveHostId(newId);
                     }}
-                    className="bg-gray-800 border border-gray-700 text-white rounded p-1 text-sm"
+                    className="bg-[#1C1C1E] border border-[#2C2C2E] text-[#E5E5EA] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-white/20 appearance-none cursor-pointer"
                 >
                     <option value="">Select Host...</option>
                     {hosts.map((h: any) => <option key={h.id} value={h.id}>{h.label}</option>)}
@@ -362,40 +373,48 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
                 <button
                     onClick={status === 'Connected' ? disconnect : connect}
                     disabled={status === 'Connecting...' || status === 'Transferring...'}
-                    className={`px-3 py-1 rounded text-sm transition-colors ${status === 'Connected'
-                        ? 'bg-red-600 hover:bg-red-700 text-white'
-                        : 'bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-800 disabled:cursor-not-allowed text-white'}`}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${status === 'Connected'
+                        ? 'bg-[#B45309]/80 hover:bg-[#B45309] text-white'
+                        : 'bg-[#D4D4D4] hover:bg-[#E5E5E5] text-black disabled:opacity-50 disabled:cursor-not-allowed'}`}
                 >
                     {status === 'Connecting...' ? 'Connecting...' : status === 'Connected' ? 'Disconnect' : 'Connect'}
                 </button>
-                <span className="text-xs text-gray-500 ml-auto">{status}</span>
+                <div className="ml-auto flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${status === 'Connected' ? 'bg-green-500 animate-pulse' : status === 'Disconnected' ? 'bg-[#505055]' : 'bg-amber-500 animate-pulse'}`}></div>
+                    <span className="text-xs text-[#8E8E93] font-medium">{status}</span>
+                </div>
             </div>
 
             {/* Panes */}
-            <div className="flex-1 flex overflow-hidden">
+            <div className="flex-1 flex overflow-hidden gap-3 p-3">
                 {/* Local Pane */}
                 <div
-                    className="flex-1 border-r border-gray-800 flex flex-col bg-gray-900/50"
+                    className="flex-1 flex flex-col bg-[#0A0A0A] rounded-xl border border-[#1C1C1E] overflow-hidden"
                     onDragOver={handleDragOver}
                     onDrop={(e) => handleDrop(e, 'local')}
                 >
-                    <div className="p-2 border-b border-gray-800 bg-gray-900 flex items-center gap-2">
-                        <span className="text-xs font-mono text-gray-500">Local:</span>
+                    <div className="px-4 py-3 border-b border-[#1C1C1E] bg-[#0F0F0F] flex items-center gap-3">
+                        <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-md bg-amber-500/10 flex items-center justify-center">
+                                <Folder size={12} className="text-amber-500" />
+                            </div>
+                            <span className="text-xs font-semibold text-[#E5E5EA] uppercase tracking-wider">Local</span>
+                        </div>
                         <input
                             value={localPath}
                             onChange={(e) => setLocalPath(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && listLocal(localPath)}
-                            className="bg-transparent text-xs font-mono text-gray-300 w-full focus:outline-none"
+                            className="flex-1 bg-[#1C1C1E] text-xs font-mono text-[#E5E5EA] px-3 py-1.5 rounded-lg focus:outline-none focus:ring-1 focus:ring-white/20"
                         />
                     </div>
-                    <div className="flex-1 overflow-y-auto p-2">
+                    <div className="flex-1 overflow-y-auto p-2 custom-scrollbar">
                         {localPath !== '/' && (
                             <div
-                                className="flex items-center gap-2 p-1 hover:bg-gray-800 rounded cursor-pointer text-sm text-gray-300 select-none group"
+                                className="flex items-center gap-3 px-3 py-2 hover:bg-[#1C1C1E] rounded-lg cursor-pointer text-sm text-[#E5E5EA] select-none transition-colors"
                                 onDoubleClick={goLocalUp}
                             >
-                                <Folder size={14} className="text-yellow-500" />
-                                <span className="truncate flex-1">..</span>
+                                <Folder size={16} className="text-amber-500" />
+                                <span className="truncate flex-1 font-medium">..</span>
                             </div>
                         )}
                         {localFiles
@@ -406,7 +425,7 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
                                     draggable
                                     onDragStart={(e) => handleDragStart(e, f, 'local')}
                                     onContextMenu={(e) => onContextMenu(e, f, 'local')}
-                                    className="flex items-center gap-2 p-1 hover:bg-gray-800 rounded cursor-pointer text-sm text-gray-300 select-none group"
+                                    className="flex items-center gap-3 px-3 py-2 hover:bg-[#1C1C1E] rounded-lg cursor-pointer text-sm text-[#E5E5EA] select-none transition-colors group"
                                     onDoubleClick={async () => {
                                         if (f.type === 'd') {
                                             const newPath = await window.electron.invoke('local-path-join', localPath, f.name);
@@ -414,8 +433,8 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
                                         }
                                     }}
                                 >
-                                    {f.type === 'd' ? <Folder size={14} className="text-yellow-500" /> : <FileText size={14} className="text-gray-500" />}
-                                    <span className="truncate flex-1">{f.name}</span>
+                                    {f.type === 'd' ? <Folder size={16} className="text-amber-500" /> : <FileText size={16} className="text-[#505055]" />}
+                                    <span className="truncate flex-1 font-medium">{f.name}</span>
                                 </div>
                             ))}
                     </div>
@@ -423,35 +442,40 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
 
                 {/* Remote Pane */}
                 <div
-                    className="flex-1 flex flex-col bg-gray-900"
+                    className="flex-1 flex flex-col bg-[#0A0A0A] rounded-xl border border-[#1C1C1E] overflow-hidden"
                     onDragOver={handleDragOver}
                     onDrop={(e) => handleDrop(e, 'remote')}
                 >
-                    <div className="p-2 border-b border-gray-800 bg-gray-900 flex items-center gap-2">
-                        <button onClick={goUp} className="text-gray-500 hover:text-white" title="Up Directory">
+                    <div className="px-4 py-3 border-b border-[#1C1C1E] bg-[#0F0F0F] flex items-center gap-3">
+                        <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-md bg-blue-500/10 flex items-center justify-center">
+                                <Folder size={12} className="text-blue-500" />
+                            </div>
+                            <span className="text-xs font-semibold text-[#E5E5EA] uppercase tracking-wider">Remote</span>
+                        </div>
+                        <button onClick={goUp} className="text-[#8E8E93] hover:text-white transition-colors p-1.5 hover:bg-[#1C1C1E] rounded-lg" title="Up Directory">
                             <ArrowLeft size={14} className="rotate-90" />
                         </button>
-                        <span className="text-xs font-mono text-gray-500">Remote:</span>
                         <input
                             value={remotePath}
                             onChange={(e) => setRemotePath(e.target.value)}
                             onKeyDown={handleRemotePathKeyDown}
-                            className="bg-transparent text-xs font-mono text-gray-300 w-full focus:outline-none"
+                            className="flex-1 bg-[#1C1C1E] text-xs font-mono text-[#E5E5EA] px-3 py-1.5 rounded-lg focus:outline-none focus:ring-1 focus:ring-white/20"
                         />
-                        <button onClick={() => sessionId && listRemote(sessionId, remotePath)} title="Refresh">
-                            <RefreshCw size={14} className="text-gray-500 hover:text-white" />
+                        <button onClick={() => sessionId && listRemote(sessionId, remotePath)} className="text-[#8E8E93] hover:text-white transition-colors p-1.5 hover:bg-[#1C1C1E] rounded-lg" title="Refresh">
+                            <RefreshCw size={14} />
                         </button>
                     </div>
-                    <div className="flex-1 overflow-y-auto p-2">
+                    <div className="flex-1 overflow-y-auto p-2 custom-scrollbar">
                         {sessionId ? (
                             <>
                                 {remotePath !== '/' && (
                                     <div
-                                        className="flex items-center gap-2 p-1 hover:bg-gray-800 rounded cursor-pointer text-sm text-gray-300 select-none group"
+                                        className="flex items-center gap-3 px-3 py-2 hover:bg-[#1C1C1E] rounded-lg cursor-pointer text-sm text-[#E5E5EA] select-none transition-colors"
                                         onDoubleClick={goUp}
                                     >
-                                        <Folder size={14} className="text-blue-500" />
-                                        <span className="truncate flex-1">..</span>
+                                        <Folder size={16} className="text-blue-500" />
+                                        <span className="truncate flex-1 font-medium">..</span>
                                     </div>
                                 )}
                                 {remoteFiles
@@ -462,17 +486,20 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
                                             draggable
                                             onDragStart={(e) => handleDragStart(e, f, 'remote')}
                                             onContextMenu={(e) => onContextMenu(e, f, 'remote')}
-                                            className="flex items-center gap-2 p-1 hover:bg-gray-800 rounded cursor-pointer text-sm text-gray-300 select-none group"
+                                            className="flex items-center gap-3 px-3 py-2 hover:bg-[#1C1C1E] rounded-lg cursor-pointer text-sm text-[#E5E5EA] select-none transition-colors group"
                                             onDoubleClick={() => f.type === 'd' && listRemote(sessionId, remotePath === '/' ? `/${f.name}` : `${remotePath}/${f.name}`)}
                                         >
-                                            {f.type === 'd' ? <Folder size={14} className="text-blue-500" /> : <FileText size={14} className="text-gray-500" />}
-                                            <span className="truncate flex-1">{f.name}</span>
+                                            {f.type === 'd' ? <Folder size={16} className="text-blue-500" /> : <FileText size={16} className="text-[#505055]" />}
+                                            <span className="truncate flex-1 font-medium">{f.name}</span>
                                         </div>
                                     ))}
                             </>
                         ) : (
-                            <div className="flex items-center justify-center h-full text-gray-600">
-                                Not Connected
+                            <div className="flex flex-col items-center justify-center h-full text-[#8E8E93] gap-2">
+                                <div className="w-12 h-12 rounded-xl bg-[#1C1C1E] flex items-center justify-center">
+                                    <Folder size={24} className="text-[#505055]" />
+                                </div>
+                                <span className="text-sm">Not Connected</span>
                             </div>
                         )}
                     </div>
@@ -481,23 +508,25 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
 
             {/* Transfer Queue Overlay */}
             {transfers.size > 0 && (
-                <div className="absolute bottom-0 right-0 left-0 bg-gray-800 border-t border-gray-700 shadow-xl max-h-48 overflow-y-auto">
-                    <div className="px-3 py-1 bg-gray-900 text-xs font-bold text-gray-400 flex items-center justify-between">
-                        <span>Transfers ({transfers.size})</span>
+                <div className="absolute bottom-4 right-4 left-4 bg-[#1C1C1E] border border-[#2C2C2E] shadow-2xl rounded-xl max-h-48 overflow-hidden">
+                    <div className="px-4 py-2 bg-[#0F0F0F] text-xs font-semibold text-[#E5E5EA] flex items-center justify-between border-b border-[#2C2C2E]">
+                        <span className="uppercase tracking-wider">Transfers ({transfers.size})</span>
                     </div>
-                    <div className="p-2 space-y-2">
+                    <div className="p-3 space-y-3 max-h-36 overflow-y-auto custom-scrollbar">
                         {Array.from(transfers.values()).map((t, i) => (
-                            <div key={i} className="text-xs">
-                                <div className="flex justify-between items-center mb-1">
+                            <div key={i} className="bg-[#0A0A0A] rounded-lg p-3">
+                                <div className="flex justify-between items-center mb-2">
                                     <div className="flex items-center gap-2 truncate max-w-[70%]">
-                                        {t.type === 'upload' ? <Upload size={10} className="text-blue-400" /> : <Download size={10} className="text-green-400" />}
-                                        <span className="truncate">{t.file.split('/').pop()}</span>
+                                        <div className={`w-5 h-5 rounded flex items-center justify-center ${t.type === 'upload' ? 'bg-blue-500/10' : 'bg-green-500/10'}`}>
+                                            {t.type === 'upload' ? <Upload size={10} className="text-blue-400" /> : <Download size={10} className="text-green-400" />}
+                                        </div>
+                                        <span className="truncate text-sm text-[#E5E5EA] font-medium">{t.file.split('/').pop()}</span>
                                     </div>
-                                    <span className="text-gray-500">{formatBytes(t.transferred)} / {formatBytes(t.total)}</span>
+                                    <span className="text-xs text-[#8E8E93]">{formatBytes(t.transferred)} / {formatBytes(t.total)}</span>
                                 </div>
-                                <div className="h-1 bg-gray-700 rounded-full overflow-hidden">
+                                <div className="h-1.5 bg-[#2C2C2E] rounded-full overflow-hidden">
                                     <div
-                                        className={`h-full ${t.status === 'done' ? 'bg-green-500' : 'bg-indigo-500'} transition-all duration-300`}
+                                        className={`h-full ${t.status === 'done' ? 'bg-green-500' : 'bg-blue-500'} transition-all duration-300 rounded-full`}
                                         style={{ width: `${Math.min(100, (t.transferred / t.total) * 100)}%` }}
                                     />
                                 </div>
@@ -511,10 +540,10 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
             {menu.visible && menu.file && createPortal(
                 <div
                     ref={menuRef}
-                    className="fixed z-50 w-40 bg-gray-800 border border-gray-700 rounded-lg shadow-xl py-1 overflow-hidden"
+                    className="fixed z-50 w-40 bg-[#1C1C1E] border border-[#2C2C2E] rounded-lg shadow-xl py-1 overflow-hidden"
                     style={{ left: menu.x, top: menu.y }}
                 >
-                    <div className="px-4 py-1.5 text-xs text-gray-500 border-b border-gray-700 mb-1 truncate">
+                    <div className="px-4 py-1.5 text-xs text-[#8E8E93] border-b border-[#2C2C2E] mb-1 truncate">
                         {menu.file.name}
                     </div>
                     {/* Open / Edit */}
@@ -525,7 +554,7 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
                                 window.electron.invoke('open-path', { path });
                                 setMenu(prev => ({ ...prev, visible: false }));
                             }}
-                            className="w-full text-left px-4 py-2 text-sm flex items-center gap-2 hover:bg-gray-700 text-gray-200 hover:text-white"
+                            className="w-full text-left px-4 py-2 text-sm flex items-center gap-2 hover:bg-[#2C2C2E] text-[#E5E5EA] hover:text-white"
                         >
                             <FileText size={14} /> Open
                         </button>
@@ -546,7 +575,7 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
                                         setStatus('Failed to open: ' + res.error);
                                     }
                                 }}
-                                className="w-full text-left px-4 py-2 text-sm flex items-center gap-2 hover:bg-gray-700 text-gray-200 hover:text-white"
+                                className="w-full text-left px-4 py-2 text-sm flex items-center gap-2 hover:bg-[#2C2C2E] text-[#E5E5EA] hover:text-white"
                             >
                                 <Edit2 size={14} /> Edit Remote
                             </button>
@@ -584,7 +613,7 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
                                 }
                             });
                         }}
-                        className="w-full text-left px-4 py-2 text-sm flex items-center gap-2 hover:bg-gray-700 text-gray-200 hover:text-white"
+                        className="w-full text-left px-4 py-2 text-sm flex items-center gap-2 hover:bg-[#2C2C2E] text-[#E5E5EA] hover:text-white"
                     >
                         <Folder size={14} /> Rename
                     </button>
@@ -608,30 +637,39 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
                                 }
                             });
                         }}
-                        className="w-full text-left px-4 py-2 text-sm flex items-center gap-2 hover:bg-gray-700 text-gray-200 hover:text-white"
+                        className="w-full text-left px-4 py-2 text-sm flex items-center gap-2 hover:bg-[#2C2C2E] text-[#E5E5EA] hover:text-white"
                     >
                         <Key size={14} /> Permissions
                     </button>
                     <button
                         onClick={async () => {
                             setMenu(prev => ({ ...prev, visible: false }));
-                            setDialog({
-                                type: 'delete',
-                                title: 'Confirm Deletion',
-                                value: menu.file?.name,
-                                callback: async () => {
-                                    if (menu.type === 'local') {
-                                        const path = await window.electron.invoke('local-path-join', localPath, menu.file?.name);
-                                        await window.electron.invoke('local-delete', { path });
-                                        listLocal(localPath);
-                                    } else {
-                                        await window.electron.invoke('sftp-delete', { id: sessionId, path: remotePath === '/' ? `/${menu.file?.name}` : `${remotePath}/${menu.file?.name}`, isDir: menu.file?.type === 'd' });
-                                        listRemote(sessionId, remotePath);
-                                    }
+
+                            const performDelete = async () => {
+                                if (menu.type === 'local') {
+                                    const path = await window.electron.invoke('local-path-join', localPath, menu.file?.name);
+                                    await window.electron.invoke('local-delete', { path });
+                                    listLocal(localPath);
+                                } else {
+                                    await window.electron.invoke('sftp-delete', { id: sessionId, path: remotePath === '/' ? `/${menu.file?.name}` : `${remotePath}/${menu.file?.name}`, isDir: menu.file?.type === 'd' });
+                                    listRemote(sessionId, remotePath);
                                 }
-                            });
+                            };
+
+                            // Check if confirmation is required
+                            if (sftpSettings.confirmBeforeDelete) {
+                                setDialog({
+                                    type: 'delete',
+                                    title: 'Confirm Deletion',
+                                    value: menu.file?.name,
+                                    callback: performDelete
+                                });
+                            } else {
+                                // Skip confirmation
+                                await performDelete();
+                            }
                         }}
-                        className="w-full text-left px-4 py-2 text-sm flex items-center gap-2 hover:bg-gray-700 text-red-400 hover:text-red-300"
+                        className="w-full text-left px-4 py-2 text-sm flex items-center gap-2 hover:bg-[#2C2C2E] text-red-400 hover:text-red-300"
                     >
                         <Trash2 size={14} /> Delete
                     </button>
@@ -641,9 +679,9 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
 
             {/* Sftp Navigation/Action Dialog */}
             {dialog && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-                    <div className="bg-gray-800 border border-gray-700 rounded-xl shadow-2xl w-full max-w-sm overflow-hidden p-6 animate-in fade-in zoom-in duration-200">
-                        <h3 className="text-lg font-semibold text-gray-100 mb-4">{dialog.title}</h3>
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                    <div className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-xl shadow-2xl w-full max-w-sm overflow-hidden p-6 animate-in fade-in zoom-in duration-200">
+                        <h3 className="text-lg font-semibold text-[#E5E5EA] mb-4">{dialog.title}</h3>
 
                         {(dialog.type === 'rename' || dialog.type === 'chmod') ? (
                             <form onSubmit={(e) => {
@@ -656,18 +694,18 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
                                     type="text"
                                     value={dialog.value}
                                     onChange={(e) => setDialog({ ...dialog, value: e.target.value })}
-                                    className="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                    className="w-full bg-black border border-[#2C2C2E] rounded p-2 text-sm text-[#E5E5EA] focus:outline-none focus:ring-1 focus:ring-white/20"
                                 />
                                 <div className="flex justify-end gap-2">
-                                    <button type="button" onClick={() => setDialog(null)} className="px-3 py-1.5 text-xs text-gray-400 hover:text-white">Cancel</button>
-                                    <button type="submit" className="px-4 py-1.5 text-xs bg-indigo-600 hover:bg-indigo-500 text-white rounded font-medium">Confirm</button>
+                                    <button type="button" onClick={() => setDialog(null)} className="px-3 py-1.5 text-xs text-[#8E8E93] hover:text-white">Cancel</button>
+                                    <button type="submit" className="px-4 py-1.5 text-xs bg-[#D4D4D4] hover:bg-[#E5E5E5] text-black rounded font-medium">Confirm</button>
                                 </div>
                             </form>
                         ) : (
                             <div className="space-y-4">
-                                <p className="text-sm text-gray-300">Are you sure you want to delete <span className="text-white font-mono">{dialog.value}</span>?</p>
+                                <p className="text-sm text-[#EDEDED]">Are you sure you want to delete <span className="text-white font-mono">{dialog.value}</span>?</p>
                                 <div className="flex justify-end gap-2">
-                                    <button onClick={() => setDialog(null)} className="px-3 py-1.5 text-xs text-gray-400 hover:text-white">Cancel</button>
+                                    <button onClick={() => setDialog(null)} className="px-3 py-1.5 text-xs text-[#8E8E93] hover:text-white">Cancel</button>
                                     <button onClick={() => { dialog.callback(); setDialog(null); }} className="px-4 py-1.5 text-xs bg-red-600 hover:bg-red-500 text-white rounded font-medium">Delete</button>
                                 </div>
                             </div>

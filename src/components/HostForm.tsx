@@ -51,7 +51,7 @@ export function HostForm({ onClose, initialData }: HostFormProps) {
                             type="text"
                             value={formData.label}
                             onChange={(e) => setFormData({ ...formData, label: e.target.value })}
-                            className="w-full bg-gray-800/50 border border-gray-700 rounded-lg py-2 pl-9 pr-3 text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium"
+                            className="w-full bg-black border border-[#2C2C2E] rounded-xl py-2.5 pl-9 pr-3 text-white placeholder-[#505055] focus:outline-none focus:ring-1 focus:ring-white/20 focus:border-white/40 transition-all font-medium"
                             placeholder="Production Server"
                             required
                         />
@@ -60,26 +60,26 @@ export function HostForm({ onClose, initialData }: HostFormProps) {
 
                 <div className="grid grid-cols-3 gap-4">
                     <div className="col-span-2 relative">
-                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Hostname / IP</label>
+                        <label className="text-xs font-bold text-[#8E8E93] uppercase tracking-wider mb-1.5 block">Hostname / IP</label>
                         <div className="relative">
-                            <Globe className="absolute left-3 top-2.5 text-gray-500 w-4 h-4" />
+                            <Globe className="absolute left-3 top-3 text-[#505055] w-4 h-4" />
                             <input
                                 type="text"
                                 value={formData.address}
                                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                                className="w-full bg-gray-800/50 border border-gray-700 rounded-lg py-2 pl-9 pr-3 text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-mono text-sm"
+                                className="w-full bg-black border border-[#2C2C2E] rounded-xl py-2.5 pl-9 pr-3 text-white placeholder-[#505055] focus:outline-none focus:ring-1 focus:ring-white/20 focus:border-white/40 transition-all font-mono text-sm"
                                 placeholder="192.168.1.1"
                                 required
                             />
                         </div>
                     </div>
                     <div>
-                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Port</label>
+                        <label className="text-xs font-bold text-[#8E8E93] uppercase tracking-wider mb-1.5 block">Port</label>
                         <input
                             type="number"
                             value={formData.port}
                             onChange={(e) => setFormData({ ...formData, port: parseInt(e.target.value) })}
-                            className="w-full bg-gray-800/50 border border-gray-700 rounded-lg py-2 px-3 text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-mono text-sm"
+                            className="w-full bg-black border border-[#2C2C2E] rounded-xl py-2.5 px-3 text-white placeholder-[#505055] focus:outline-none focus:ring-1 focus:ring-white/20 focus:border-white/40 transition-all font-mono text-sm"
                             placeholder="22"
                         />
                     </div>
@@ -87,24 +87,24 @@ export function HostForm({ onClose, initialData }: HostFormProps) {
 
                 <div className="grid grid-cols-2 gap-4">
                     <div className="relative">
-                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Username</label>
+                        <label className="text-xs font-bold text-[#8E8E93] uppercase tracking-wider mb-1.5 block">Username</label>
                         <div className="relative">
-                            <User className="absolute left-3 top-2.5 text-gray-500 w-4 h-4" />
+                            <User className="absolute left-3 top-3 text-[#505055] w-4 h-4" />
                             <input
                                 type="text"
                                 value={formData.username}
                                 onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                                className="w-full bg-gray-800/50 border border-gray-700 rounded-lg py-2 pl-9 pr-3 text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-sm font-medium"
+                                className="w-full bg-black border border-[#2C2C2E] rounded-xl py-2.5 pl-9 pr-3 text-white placeholder-[#505055] focus:outline-none focus:ring-1 focus:ring-white/20 focus:border-white/40 transition-all text-sm font-medium"
                                 placeholder="root"
                             />
                         </div>
                     </div>
                     <div className="relative">
-                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Group</label>
+                        <label className="text-xs font-bold text-[#8E8E93] uppercase tracking-wider mb-1.5 block">Group</label>
                         <select
                             value={formData.groupId || ''}
                             onChange={(e) => setFormData({ ...formData, groupId: e.target.value })}
-                            className="w-full bg-gray-800/50 border border-gray-700 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-sm h-[38px]"
+                            className="w-full bg-black border border-[#2C2C2E] rounded-xl py-2.5 px-3 text-white focus:outline-none focus:ring-1 focus:ring-white/20 focus:border-white/40 transition-all text-sm h-[42px] appearance-none"
                         >
                             <option value="">No Group</option>
                             {groups.map((g: any) => (
@@ -115,27 +115,27 @@ export function HostForm({ onClose, initialData }: HostFormProps) {
                 </div>
 
                 <div className="relative">
-                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Default Path (Optional)</label>
+                    <label className="text-xs font-bold text-[#8E8E93] uppercase tracking-wider mb-1.5 block">Default Path (Optional)</label>
                     <div className="relative">
-                        <Folder className="absolute left-3 top-2.5 text-gray-500 w-4 h-4" />
+                        <Folder className="absolute left-3 top-3 text-[#505055] w-4 h-4" />
                         <input
                             type="text"
                             value={formData.defaultPath || ''}
                             onChange={(e) => setFormData({ ...formData, defaultPath: e.target.value })}
-                            className="w-full bg-gray-800/50 border border-gray-700 rounded-lg py-2 pl-9 pr-3 text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-sm font-medium font-mono"
+                            className="w-full bg-black border border-[#2C2C2E] rounded-xl py-2.5 pl-9 pr-3 text-white placeholder-[#505055] focus:outline-none focus:ring-1 focus:ring-white/20 focus:border-white/40 transition-all text-sm font-medium font-mono"
                             placeholder="/var/www/html"
                         />
                     </div>
                 </div>
 
                 <div className="relative">
-                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Identity</label>
+                    <label className="text-xs font-bold text-[#8E8E93] uppercase tracking-wider mb-1.5 block">Identity</label>
                     <div className="relative">
-                        <Lock className="absolute left-3 top-2.5 text-gray-500 w-4 h-4" />
+                        <Lock className="absolute left-3 top-3 text-[#505055] w-4 h-4" />
                         <select
                             value={formData.identityId || ''}
                             onChange={(e) => setFormData({ ...formData, identityId: e.target.value })}
-                            className="w-full bg-gray-800/50 border border-gray-700 rounded-lg py-2 pl-9 pr-3 text-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all appearance-none text-sm"
+                            className="w-full bg-black border border-[#2C2C2E] rounded-xl py-2.5 pl-9 pr-3 text-white focus:outline-none focus:ring-1 focus:ring-white/20 focus:border-white/40 transition-all appearance-none text-sm"
                         >
                             <option value="">Select Identity...</option>
                             {identities.map((id: any) => (
@@ -146,21 +146,22 @@ export function HostForm({ onClose, initialData }: HostFormProps) {
                 </div>
             </div>
 
-            <div className="border-t border-gray-800 pt-4">
+            <div className="border-t border-[#2C2C2E] pt-6">
                 <div className="flex items-center justify-between mb-4">
-                    <h4 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
-                        <Server size={14} className="text-indigo-400" />
+                    <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                        <Server size={14} className="text-[#8E8E93]" />
                         Network & Tunneling
                     </h4>
                 </div>
 
+
                 <div className="space-y-4">
                     <div>
-                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Jump Host</label>
+                        <label className="text-xs font-bold text-[#8E8E93] uppercase tracking-wider mb-1.5 block">Jump Host</label>
                         <select
                             value={formData.jumpHostId || ''}
                             onChange={(e) => setFormData({ ...formData, jumpHostId: e.target.value })}
-                            className="w-full bg-gray-800/50 border border-gray-700 rounded-lg p-2 text-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-sm"
+                            className="w-full bg-black border border-[#2C2C2E] rounded-xl p-2.5 text-white focus:outline-none focus:ring-1 focus:ring-white/20 focus:border-white/40 transition-all text-sm appearance-none"
                         >
                             <option value="">None (Direct Connection)</option>
                             {useHostStore((state: any) => state.hosts)
@@ -175,33 +176,33 @@ export function HostForm({ onClose, initialData }: HostFormProps) {
 
                     <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Port Forwards</label>
+                            <label className="text-xs font-bold text-[#8E8E93] uppercase tracking-wider">Port Forwards</label>
                             <div className="flex gap-2">
                                 <button
                                     type="button"
                                     onClick={() => setFormData({ ...formData, tunnels: [...(formData.tunnels || []), { type: 'dynamic', srcPort: 1080 }] as any })}
-                                    className="text-[10px] bg-indigo-500/10 text-indigo-400 px-2 py-1 rounded hover:bg-indigo-500/20 transition-colors uppercase font-bold tracking-wide"
+                                    className="text-[10px] bg-white/5 text-white px-2.5 py-1 rounded-md hover:bg-white/10 transition-colors uppercase font-bold tracking-widest border border-white/5"
                                 >
                                     + Dynamic
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setFormData({ ...formData, tunnels: [...(formData.tunnels || []), { type: 'local', srcPort: 8080, dstHost: 'localhost', dstPort: 80 }] as any })}
-                                    className="text-[10px] bg-indigo-500/10 text-indigo-400 px-2 py-1 rounded hover:bg-indigo-500/20 transition-colors uppercase font-bold tracking-wide"
+                                    className="text-[10px] bg-white/5 text-white px-2.5 py-1 rounded-md hover:bg-white/10 transition-colors uppercase font-bold tracking-widest border border-white/5"
                                 >
                                     + Local
                                 </button>
                             </div>
                         </div>
 
-                        {(formData.tunnels!.length > 0) ? (
+                        {(formData.tunnels && formData.tunnels.length > 0) ? (
                             <div className="space-y-2">
-                                {formData.tunnels!.map((tunnel: any, idx: number) => (
-                                    <div key={idx} className="flex items-center gap-3 bg-gray-800/50 border border-gray-700/50 p-2 rounded-lg text-sm group">
-                                        <span className="uppercase text-[10px] font-bold text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded">{tunnel.type}</span>
-                                        <div className="flex items-center gap-2 font-mono text-gray-300">
+                                {formData.tunnels.map((tunnel: any, idx: number) => (
+                                    <div key={idx} className="flex items-center gap-3 bg-black border border-[#2C2C2E] p-2.5 rounded-lg text-sm group">
+                                        <span className="uppercase text-[10px] font-bold text-black bg-white px-1.5 py-0.5 rounded">{tunnel.type}</span>
+                                        <div className="flex items-center gap-2 font-mono text-[#8E8E93]">
                                             <span>{tunnel.srcPort}</span>
-                                            <ArrowRight size={12} className="text-gray-600" />
+                                            <ArrowRight size={12} className="text-[#505055]" />
                                             <span>{tunnel.dstHost || 'SOCKS'}:{tunnel.dstPort || ''}</span>
                                         </div>
                                         <button
@@ -211,7 +212,7 @@ export function HostForm({ onClose, initialData }: HostFormProps) {
                                                 newTunnels.splice(idx, 1);
                                                 setFormData({ ...formData, tunnels: newTunnels });
                                             }}
-                                            className="ml-auto text-gray-600 hover:text-red-400 transition-colors"
+                                            className="ml-auto text-[#505055] hover:text-red-400 transition-colors"
                                         >
                                             ×
                                         </button>
@@ -219,7 +220,7 @@ export function HostForm({ onClose, initialData }: HostFormProps) {
                                 ))}
                             </div>
                         ) : (
-                            <div className="text-center py-3 bg-gray-800/30 rounded-lg border border-dashed border-gray-800 text-xs text-gray-600">
+                            <div className="text-center py-4 bg-black/50 rounded-xl border border-dashed border-[#2C2C2E] text-xs text-[#505055]">
                                 No active port forwarding rules.
                             </div>
                         )}
@@ -227,17 +228,17 @@ export function HostForm({ onClose, initialData }: HostFormProps) {
                 </div>
             </div>
 
-            <div className="flex justify-end pt-2 border-t border-gray-800">
+            <div className="flex justify-end pt-2 border-t border-[#2C2C2E]">
                 <button
                     type="button"
                     onClick={onClose}
-                    className="mr-3 px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
+                    className="mr-3 px-5 py-2.5 text-sm text-[#8E8E93] hover:text-white transition-colors font-medium"
                 >
                     Cancel
                 </button>
                 <button
                     type="submit"
-                    className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-all font-medium text-sm shadow-lg shadow-indigo-900/20"
+                    className="px-6 py-2.5 bg-white text-black hover:bg-gray-200 rounded-lg transition-all font-bold text-sm shadow-lg shadow-white/5 uppercase tracking-wide"
                 >
                     {initialData ? 'Save Changes' : 'Create Host'}
                 </button>

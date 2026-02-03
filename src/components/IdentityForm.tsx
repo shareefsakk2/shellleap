@@ -49,14 +49,14 @@ export function IdentityForm({ onClose, initialData }: IdentityFormProps) {
         <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-4">
                 <div className="relative">
-                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Label</label>
+                    <label className="text-xs font-bold text-[#8E8E93] uppercase tracking-wider mb-1.5 block">Label</label>
                     <div className="relative">
-                        <Tag className="absolute left-3 top-2.5 text-gray-500 w-4 h-4" />
+                        <Tag className="absolute left-3 top-3 text-[#505055] w-4 h-4" />
                         <input
                             type="text"
                             value={formData.label}
                             onChange={(e) => setFormData({ ...formData, label: e.target.value })}
-                            className="w-full bg-gray-800/50 border border-gray-700 rounded-lg py-2 pl-9 pr-3 text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium"
+                            className="w-full bg-black border border-[#2C2C2E] rounded-xl py-2.5 pl-9 pr-3 text-white placeholder-[#505055] focus:outline-none focus:ring-1 focus:ring-white/20 focus:border-white/40 transition-all font-medium"
                             placeholder="My AWS Key"
                             required
                         />
@@ -65,13 +65,13 @@ export function IdentityForm({ onClose, initialData }: IdentityFormProps) {
 
                 <div className="grid grid-cols-2 gap-4">
                     <div className="relative">
-                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Type</label>
+                        <label className="text-xs font-bold text-[#8E8E93] uppercase tracking-wider mb-1.5 block">Type</label>
                         <div className="relative">
-                            <Lock className="absolute left-3 top-2.5 text-gray-500 w-4 h-4" />
+                            <Lock className="absolute left-3 top-3 text-[#505055] w-4 h-4" />
                             <select
                                 value={formData.type}
                                 onChange={(e) => setFormData({ ...formData, type: e.target.value as IdentityType })}
-                                className="w-full bg-gray-800/50 border border-gray-700 rounded-lg py-2 pl-9 pr-3 text-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all appearance-none text-sm"
+                                className="w-full bg-black border border-[#2C2C2E] rounded-xl py-2.5 pl-9 pr-3 text-white focus:outline-none focus:ring-1 focus:ring-white/20 focus:border-white/40 transition-all appearance-none text-sm"
                             >
                                 <option value="password">Password</option>
                                 <option value="key">Key</option>
@@ -80,14 +80,14 @@ export function IdentityForm({ onClose, initialData }: IdentityFormProps) {
                     </div>
 
                     <div className="relative">
-                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Username</label>
+                        <label className="text-xs font-bold text-[#8E8E93] uppercase tracking-wider mb-1.5 block">Username</label>
                         <div className="relative">
-                            <User className="absolute left-3 top-2.5 text-gray-500 w-4 h-4" />
+                            <User className="absolute left-3 top-3 text-[#505055] w-4 h-4" />
                             <input
                                 type="text"
                                 value={formData.username}
                                 onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                                className="w-full bg-gray-800/50 border border-gray-700 rounded-lg py-2 pl-9 pr-3 text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-sm font-medium"
+                                className="w-full bg-black border border-[#2C2C2E] rounded-xl py-2.5 pl-9 pr-3 text-white placeholder-[#505055] focus:outline-none focus:ring-1 focus:ring-white/20 focus:border-white/40 transition-all text-sm font-medium"
                                 placeholder="ubuntu"
                             />
                         </div>
@@ -95,16 +95,16 @@ export function IdentityForm({ onClose, initialData }: IdentityFormProps) {
                 </div>
 
                 <div className="relative">
-                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">
+                    <label className="text-xs font-bold text-[#8E8E93] uppercase tracking-wider mb-1.5 block">
                         {formData.type === 'password' ? 'Password' : 'Private Key'}
                     </label>
                     <div className="relative">
-                        <Key className="absolute left-3 top-3 text-gray-500 w-4 h-4" />
+                        <Key className="absolute left-3 top-3 text-[#505055] w-4 h-4" />
                         {formData.type === 'key' ? (
                             <textarea
                                 value={secret}
                                 onChange={(e) => setSecret(e.target.value)}
-                                className="w-full bg-gray-800/50 border border-gray-700 rounded-lg py-2 pl-9 pr-3 text-gray-300 font-mono text-xs h-32 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all resize-none"
+                                className="w-full bg-black border border-[#2C2C2E] rounded-xl py-2.5 pl-9 pr-3 text-gray-300 font-mono text-xs h-32 focus:outline-none focus:ring-1 focus:ring-white/20 focus:border-white/40 transition-all resize-none"
                                 placeholder="-----BEGIN PRIVATE KEY-----"
                             />
                         ) : (
@@ -112,7 +112,7 @@ export function IdentityForm({ onClose, initialData }: IdentityFormProps) {
                                 type="password"
                                 value={secret}
                                 onChange={(e) => setSecret(e.target.value)}
-                                className="w-full bg-gray-800/50 border border-gray-700 rounded-lg py-2 pl-9 pr-3 text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-mono"
+                                className="w-full bg-black border border-[#2C2C2E] rounded-xl py-2.5 pl-9 pr-3 text-white placeholder-[#505055] focus:outline-none focus:ring-1 focus:ring-white/20 focus:border-white/40 transition-all font-mono"
                                 placeholder="••••••••"
                             />
                         )}
@@ -120,17 +120,17 @@ export function IdentityForm({ onClose, initialData }: IdentityFormProps) {
                 </div>
             </div>
 
-            <div className="flex justify-end pt-2 border-t border-gray-800">
+            <div className="flex justify-end pt-2 border-t border-[#2C2C2E]">
                 <button
                     type="button"
                     onClick={onClose}
-                    className="mr-3 px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
+                    className="mr-3 px-5 py-2.5 text-sm text-[#8E8E93] hover:text-white transition-colors font-medium"
                 >
                     Cancel
                 </button>
                 <button
                     type="submit"
-                    className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-all font-medium text-sm shadow-lg shadow-indigo-900/20"
+                    className="px-6 py-2.5 bg-white text-black hover:bg-gray-200 rounded-lg transition-all font-bold text-sm shadow-lg shadow-white/5 uppercase tracking-wide"
                 >
                     Save Identity
                 </button>

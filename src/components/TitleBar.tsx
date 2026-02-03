@@ -8,7 +8,7 @@ export function TitleBar() {
     const close = () => window.electron.invoke('window-close');
 
     return (
-        <div className="h-8 bg-gray-950 flex justify-end items-center select-none drag-region border-b border-gray-800">
+        <div className="h-8 bg-black flex justify-end items-center select-none drag-region border-b border-[#1C1C1E]">
             <div className="flex items-center h-full no-drag-region">
                 <button
                     onClick={minimize}
