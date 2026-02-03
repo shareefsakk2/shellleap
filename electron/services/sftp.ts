@@ -139,9 +139,27 @@ export function setupSFTPHandlers() {
     ipcMain.handle('sftp-upload', async (event, { id, localPath, remotePath }) => {
         const session = sftpSessions.get(id);
         if (!session) return { success: false, error: 'No active session' };
+        if (!localPath) return { success: false, error: 'Local path is required' };
+
         try {
             const fs = require('fs');
+            const { stat } = require('fs/promises');
+            const stats = await stat(localPath);
+            const totalSize = stats.size;
+            let transferred = 0;
+
             const stream = fs.createReadStream(localPath);
+
+            stream.on('data', (chunk: Buffer) => {
+                transferred += chunk.length;
+                event.sender.send('sftp-transfer-progress', {
+                    type: 'upload',
+                    file: remotePath,
+                    transferred,
+                    total: totalSize
+                });
+            });
+
             await session.sftp.put(stream, remotePath);
             return { success: true };
         } catch (err: any) {
@@ -153,8 +171,31 @@ export function setupSFTPHandlers() {
     ipcMain.handle('sftp-download', async (event, { id, remotePath, localPath }) => {
         const session = sftpSessions.get(id);
         if (!session) return { success: false, error: 'No active session' };
+
         try {
-            await session.sftp.get(remotePath, localPath);
+            const fs = require('fs');
+            const { PassThrough } = require('stream');
+
+            const stats = await session.sftp.stat(remotePath);
+            const totalSize = stats.size;
+            let transferred = 0;
+
+            const writeStream = fs.createWriteStream(localPath);
+            const tracker = new PassThrough();
+
+            tracker.on('data', (chunk: Buffer) => {
+                transferred += chunk.length;
+                event.sender.send('sftp-transfer-progress', {
+                    type: 'download',
+                    file: remotePath,
+                    transferred,
+                    total: totalSize
+                });
+            });
+
+            tracker.pipe(writeStream);
+
+            await session.sftp.get(remotePath, tracker);
             return { success: true };
         } catch (err: any) {
             return { success: false, error: err.message };
@@ -232,18 +273,35 @@ export function setupSFTPHandlers() {
             const { shell } = require('electron');
             const tempDir = join(os.tmpdir(), 'shellleap_sync_' + id);
             if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+
             const localPath = join(tempDir, fileName);
-            await session.sftp.get(remotePath, localPath);
+
+            // Download using stream (get mechanism handles it if we pass stream?)
+            // Actually sftp.get(remote, local) is fine for initial download usually, 
+            // but let's be consistent.
+            // But for download, passing a path string to get() triggers fastGet which we said might be risky?
+            // Let's use the same stream approach as sftp-download
+            const { PassThrough } = require('stream');
+            const writeStream = fs.createWriteStream(localPath);
+            await session.sftp.get(remotePath, writeStream);
+
             await shell.openPath(localPath);
+
             const watcherKey = `${id}:${remotePath}`;
             if (watchers.has(watcherKey)) watchers.get(watcherKey).close();
+
             let isSyncing = false;
             const watcher = fs.watch(localPath, async (eventType: string) => {
                 if (eventType === 'change' && !isSyncing) {
                     isSyncing = true;
                     try {
+                        // Debounce slightly
                         await new Promise(r => setTimeout(r, 500));
-                        await session.sftp.put(localPath, remotePath);
+
+                        // Upload using stream logic to avoid fastPut issues
+                        const readStream = fs.createReadStream(localPath);
+                        await session.sftp.put(readStream, remotePath);
+
                         event.sender.send('sftp-sync-status', { id, remotePath, status: 'synced' });
                     } catch (e: any) {
                         event.sender.send('sftp-sync-status', { id, remotePath, status: 'error', error: e.message });

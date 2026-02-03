@@ -52,6 +52,56 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
         callback: (value?: string) => void
     } | null>(null);
 
+    // Transfer State
+    const [transfers, setTransfers] = useState<Map<string, { type: 'upload' | 'download', file: string, transferred: number, total: number, status: 'active' | 'done' | 'error' }>>(new Map());
+
+    useEffect(() => {
+        const handleProgress = (_: any, data: any) => {
+            // data: { type, file, transferred, total }
+            setTransfers(prev => {
+                const next = new Map(prev);
+                const key = `${data.type}:${data.file}`;
+                const existing = next.get(key);
+
+                // If done or near done
+                const isDone = data.transferred >= data.total;
+
+                next.set(key, {
+                    type: data.type,
+                    file: data.file,
+                    transferred: data.transferred,
+                    total: data.total,
+                    status: isDone ? 'done' : 'active'
+                });
+
+                // Cleanup done after delay
+                if (isDone && (!existing || existing.status !== 'done')) {
+                    setTimeout(() => {
+                        setTransfers(curr => {
+                            const n = new Map(curr);
+                            n.delete(key);
+                            return n;
+                        });
+                    }, 3000);
+                }
+                return next;
+            });
+        };
+
+        window.electron.on('sftp-transfer-progress', handleProgress);
+        return () => {
+            window.electron.off('sftp-transfer-progress', handleProgress);
+        };
+    }, []);
+
+    const formatBytes = (bytes: number) => {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    };
+
     // Auto-connect effect
     useEffect(() => {
         if (activeHostId && sessionId && status === 'Disconnected') {
@@ -186,7 +236,7 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
         if (res.success) {
             setStatus('Connected');
             // Re-list current path if re-attached, otherwise root
-            const initialPath = res.reattached ? remotePath : (res.cwd || '.');
+            const initialPath = res.reattached ? remotePath : (host.defaultPath ? host.defaultPath : (res.cwd || '.'));
             setRemotePath(initialPath);
             listRemote(sessionId, initialPath);
         } else {
@@ -214,17 +264,11 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
         listLocal(parent);
     };
 
-    const handleDragStart = async (e: React.DragEvent, file: FileEntry, source: 'local' | 'remote') => {
+    const handleDragStart = (e: React.DragEvent, file: FileEntry, source: 'local' | 'remote') => {
         e.dataTransfer.setData('source', source);
         e.dataTransfer.setData('fileName', file.name);
-
-        let fullPath = '';
-        if (source === 'local') {
-            fullPath = await window.electron.invoke('local-path-join', localPath, file.name);
-        } else {
-            fullPath = remotePath === '/' ? `/${file.name}` : `${remotePath}/${file.name}`;
-        }
-        e.dataTransfer.setData('fullPath', fullPath);
+        const currentPtr = source === 'local' ? localPath : remotePath;
+        e.dataTransfer.setData('parentPath', currentPtr);
     };
 
     const handleDrop = async (e: React.DragEvent, target: 'local' | 'remote') => {
@@ -233,7 +277,15 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
         if (source === target) return;
 
         const fileName = e.dataTransfer.getData('fileName');
-        const sourcePath = e.dataTransfer.getData('fullPath');
+        const parentPath = e.dataTransfer.getData('parentPath');
+
+        // Resolve source path
+        let sourcePath = '';
+        if (source === 'local') {
+            sourcePath = await window.electron.invoke('local-path-join', parentPath, fileName);
+        } else {
+            sourcePath = parentPath === '/' ? `/${fileName}` : `${parentPath}/${fileName}`;
+        }
 
         if (!sessionId) return;
 
@@ -287,8 +339,10 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
         });
     };
 
+
+
     return (
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full relative">
             {/* Toolbar */}
             <div className="h-12 border-b border-gray-800 flex items-center px-4 gap-4 bg-gray-900">
                 <select
@@ -356,7 +410,6 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
                                     onDoubleClick={async () => {
                                         if (f.type === 'd') {
                                             const newPath = await window.electron.invoke('local-path-join', localPath, f.name);
-                                            console.log('Navigating local to:', newPath);
                                             listLocal(newPath);
                                         }
                                     }}
@@ -425,6 +478,34 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
                     </div>
                 </div>
             </div>
+
+            {/* Transfer Queue Overlay */}
+            {transfers.size > 0 && (
+                <div className="absolute bottom-0 right-0 left-0 bg-gray-800 border-t border-gray-700 shadow-xl max-h-48 overflow-y-auto">
+                    <div className="px-3 py-1 bg-gray-900 text-xs font-bold text-gray-400 flex items-center justify-between">
+                        <span>Transfers ({transfers.size})</span>
+                    </div>
+                    <div className="p-2 space-y-2">
+                        {Array.from(transfers.values()).map((t, i) => (
+                            <div key={i} className="text-xs">
+                                <div className="flex justify-between items-center mb-1">
+                                    <div className="flex items-center gap-2 truncate max-w-[70%]">
+                                        {t.type === 'upload' ? <Upload size={10} className="text-blue-400" /> : <Download size={10} className="text-green-400" />}
+                                        <span className="truncate">{t.file.split('/').pop()}</span>
+                                    </div>
+                                    <span className="text-gray-500">{formatBytes(t.transferred)} / {formatBytes(t.total)}</span>
+                                </div>
+                                <div className="h-1 bg-gray-700 rounded-full overflow-hidden">
+                                    <div
+                                        className={`h-full ${t.status === 'done' ? 'bg-green-500' : 'bg-indigo-500'} transition-all duration-300`}
+                                        style={{ width: `${Math.min(100, (t.transferred / t.total) * 100)}%` }}
+                                    />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* Context Menu Portal */}
             {menu.visible && menu.file && createPortal(

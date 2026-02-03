@@ -16,6 +16,7 @@ export interface Host {
         dstHost?: string; // Required for local/remote
         dstPort?: number; // Required for local/remote
     }[];
+    defaultPath?: string;
 }
 
 export interface Group {

@@ -196,4 +196,44 @@ export function setupSSHHandlers() {
     ipcMain.handle('ssh-get-buffer', (event, { id }) => {
         return buffers.get(id) || '';
     });
+
+    ipcMain.handle('ssh-get-stats', async (event, { id }) => {
+        const client = sessions.get(id);
+        if (!client) return { error: 'No session' };
+
+        return new Promise((resolve) => {
+            client.exec('cat /proc/loadavg; echo "---"; cat /proc/meminfo', (err, stream) => {
+                if (err) return resolve({ error: err.message });
+                let output = '';
+                stream.on('data', (data: Buffer) => output += data.toString());
+                stream.on('close', () => {
+                    try {
+                        const [loadStr, memStr] = output.split('---');
+                        if (!loadStr || !memStr) return resolve({ error: 'Parse failed' });
+
+                        const load = parseFloat(loadStr.trim().split(' ')[0]);
+
+                        const memTotalLine = memStr.match(/MemTotal:\s+(\d+)/);
+                        const memAvailLine = memStr.match(/MemAvailable:\s+(\d+)/); // Newer kernels
+                        const memFreeLine = memStr.match(/MemFree:\s+(\d+)/);
+
+                        const total = memTotalLine ? parseInt(memTotalLine[1]) : 0;
+                        const avail = memAvailLine ? parseInt(memAvailLine[1]) : (memFreeLine ? parseInt(memFreeLine[1]) : 0);
+                        const used = total - avail;
+
+                        resolve({
+                            success: true,
+                            stats: {
+                                cpuLoad: load,
+                                ramUsed: Math.round(used / 1024), // MB
+                                ramTotal: Math.round(total / 1024) // MB
+                            }
+                        });
+                    } catch (e: any) {
+                        resolve({ error: e.message });
+                    }
+                });
+            });
+        });
+    });
 }

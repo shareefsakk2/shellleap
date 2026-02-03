@@ -1,12 +1,16 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Terminal as XTerm } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
+import { SearchAddon } from '@xterm/addon-search';
 import '@xterm/xterm/css/xterm.css';
 import { useHostStore, Host } from '@/stores/hostStore';
 import { useIdentityStore } from '@/stores/identityStore';
+import { Autosuggest } from '@/utils/Autosuggest';
+import { Search, ChevronUp, ChevronDown, X } from 'lucide-react';
+import { SystemStats } from './SystemStats';
 
 interface TerminalProps {
     hostId: string;
@@ -18,6 +22,23 @@ export const Terminal: React.FC<TerminalProps> = ({ hostId, sessionId, active = 
     const containerRef = useRef<HTMLDivElement>(null);
     const terminalRef = useRef<XTerm | null>(null);
     const fitAddonRef = useRef<FitAddon | null>(null);
+    const searchAddonRef = useRef<SearchAddon | null>(null);
+
+    const [suggestions, setSuggestions] = useState<string[]>([]);
+    const [suggestionPos, setSuggestionPos] = useState({ x: 0, y: 0 });
+    const autosuggestRef = useRef<Autosuggest>(new Autosuggest());
+    const inputBufferRef = useRef('');
+
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+
+    useEffect(() => {
+        // Load defaults
+        autosuggestRef.current.loadDefaults([
+            'ls', 'cd', 'git', 'docker', 'kubectl', 'npm', 'yarn', 'pnpm', 'node', 'python',
+            'ssh', 'scp', 'grep', 'find', 'htop', 'systemctl', 'journalctl', 'tail', 'cat', 'vi', 'nano'
+        ]);
+    }, []);
 
     useEffect(() => {
         if (!containerRef.current) return;
@@ -26,7 +47,7 @@ export const Terminal: React.FC<TerminalProps> = ({ hostId, sessionId, active = 
             theme: {
                 background: '#111827', // Tailwind gray-900
                 foreground: '#F3F4F6', // Tailwind gray-100
-                cursor: '#ffffffff',
+                cursor: '#ffffff',
             },
             fontFamily: 'Menlo, Monaco, "Courier New", monospace',
             fontSize: 14,
@@ -35,18 +56,60 @@ export const Terminal: React.FC<TerminalProps> = ({ hostId, sessionId, active = 
         });
 
         const fitAddon = new FitAddon();
+        const searchAddon = new SearchAddon();
+
         term.loadAddon(fitAddon);
         term.loadAddon(new WebLinksAddon());
+        term.loadAddon(searchAddon);
 
         term.open(containerRef.current);
         fitAddon.fit();
 
         term.attachCustomKeyEventHandler((arg) => {
+            // Search Toggle (Ctrl+F)
+            if (arg.ctrlKey && arg.code === 'KeyF' && arg.type === 'keydown') {
+                setIsSearchOpen(prev => !prev);
+                return false;
+            }
+            if (arg.code === 'Escape' && isSearchOpen) {
+                setIsSearchOpen(false);
+                searchAddon.clearDecorations();
+                term.focus(); // Return focus to terminal
+                return false;
+            }
+
+            // Copy
             if (arg.ctrlKey && arg.shiftKey && arg.code === 'KeyC' && arg.type === 'keydown') {
                 const selection = term.getSelection();
                 if (selection) {
                     navigator.clipboard.writeText(selection);
-                    return false; // Prevent default
+                    return false;
+                }
+            }
+
+            // Autosuggest Interaction
+            if (arg.type === 'keydown') {
+                if (arg.code === 'ArrowRight' && suggestions.length > 0) {
+                    // Apply suggestion
+                    const rest = suggestions[0].slice(inputBufferRef.current.split(' ').pop()?.length || 0);
+                    if (rest) {
+                        window.electron.send('ssh-input', { id: sessionId, data: rest });
+                        // Optimistically update buffer
+                        inputBufferRef.current += rest;
+                        setSuggestions([]);
+                        return false; // Swallow RightArrow
+                    }
+                }
+
+                // Reset suggestions on any navigation/modification that invalidates simple buffer logic
+                if (arg.code === 'Enter' || arg.ctrlKey) {
+                    if (arg.code === 'Enter') {
+                        // Learn
+                        const cmd = inputBufferRef.current.trim();
+                        if (cmd) autosuggestRef.current.insert(cmd.split(' ')[0]); // Learn first word
+                        inputBufferRef.current = '';
+                    }
+                    setSuggestions([]);
                 }
             }
             return true;
@@ -54,27 +117,63 @@ export const Terminal: React.FC<TerminalProps> = ({ hostId, sessionId, active = 
 
         terminalRef.current = term;
         fitAddonRef.current = fitAddon;
+        searchAddonRef.current = searchAddon;
 
         // Handle Input
         term.onData((data) => {
             window.electron.send('ssh-input', { id: sessionId, data });
+
+            // Basic Input Tracking
+            if (data === '\r') {
+                // Enter handled in keydown for reliable code checks, but data is raw
+            } else if (data === '\u007F') { // Backspace
+                inputBufferRef.current = inputBufferRef.current.slice(0, -1);
+            } else if (data.length === 1 && data.charCodeAt(0) >= 32) {
+                inputBufferRef.current += data;
+            }
+
+            // check suggestions
+            const currentWord = inputBufferRef.current.split(' ').pop() || '';
+            const results = autosuggestRef.current.search(currentWord);
+
+            // Only show if we have results and user typed at least 1 char matching
+            if (results.length > 0 && currentWord.length > 0 && results[0] !== currentWord && !isSearchOpen) {
+                setSuggestions(results);
+                // Calculate position
+                if (term.buffer.active.cursorY < term.rows - 1) { // Avoid suggesting if at very bottom edge complications
+                    // Rough estimate: cursorX * charWidth
+                    // Since we use FitAddon, we need real DOM dimensions
+                    // Note: XTerm doesn't easily give pixel offset of cursor relative to container.
+                    // We can use cursorY * lineHeight
+                    // But we don't know lineHeight exactly without checking DOM.
+                    // Let's rely on fixed sizing assumption: 14px font ~ 17px line height?
+                    // Better: just show at bottom left or static place for v1.
+                    // Or retrieve renderer dimensions
+                    const renderer = (term as any)._core._renderService;
+                    const charWidth = renderer.dimensions.actualCellWidth;
+                    const lineHeight = renderer.dimensions.actualCellHeight;
+
+                    setSuggestionPos({
+                        x: term.buffer.active.cursorX * charWidth + 10,
+                        y: (term.buffer.active.cursorY + 1) * lineHeight
+                    });
+                }
+            } else {
+                setSuggestions([]);
+            }
         });
 
-        // Handle Resize
+        // ... (rest of listeners)
         term.onResize((size) => {
             window.electron.send('ssh-resize', { id: sessionId, size });
         });
 
-        // Handle Incoming Data
         const handleData = (_: any, data: string) => {
             term.write(data);
         };
 
         window.electron.on(`ssh-data-${sessionId}`, handleData);
-
-        // Initial resize
         setTimeout(() => fitAddon.fit(), 100);
-
         const handleResize = () => fitAddon.fit();
         window.addEventListener('resize', handleResize);
 
@@ -85,11 +184,25 @@ export const Terminal: React.FC<TerminalProps> = ({ hostId, sessionId, active = 
         };
     }, [sessionId]);
 
+    // ... (rest of connect logic)
+
     useEffect(() => {
         if (active && fitAddonRef.current) {
             fitAddonRef.current.fit();
+            // Restore focus if search closed
+            if (!isSearchOpen) terminalRef.current?.focus();
         }
-    }, [active]);
+    }, [active, isSearchOpen]);
+
+    // Search Logic
+    useEffect(() => {
+        if (!searchAddonRef.current) return;
+        if (searchQuery) {
+            searchAddonRef.current.findNext(searchQuery, { incremental: true });
+        } else {
+            searchAddonRef.current.clearDecorations();
+        }
+    }, [searchQuery]);
 
     // Connect on mount
     useEffect(() => {
@@ -208,5 +321,75 @@ export const Terminal: React.FC<TerminalProps> = ({ hostId, sessionId, active = 
             // Cleanup handled at SessionWorkspace level
         };
     }, [sessionId, hostId]);
-    return <div ref={containerRef} className="h-full w-full overflow-hidden" />;
+
+    return (
+        <div ref={containerRef} className="h-full w-full overflow-hidden relative group">
+            {/* Autosuggest UI */}
+            {suggestions.length > 0 && (
+                <div
+                    className="absolute z-50 bg-gray-800 border border-gray-700 shadow-xl rounded px-2 py-1 flex flex-col gap-0.5 animate-in fade-in zoom-in duration-75"
+                    style={{ left: suggestionPos.x, top: suggestionPos.y }}
+                >
+                    {suggestions.map((s, i) => (
+                        <div key={i} className={`text-xs font-mono ${i === 0 ? 'text-indigo-400 font-bold' : 'text-gray-500'}`}>
+                            {s} {i === 0 && <span className="opacity-50 text-[10px] ml-2">→</span>}
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Search UI */}
+            {isSearchOpen && (
+                <div className="absolute top-2 right-2 z-50 bg-[#1f2937] border border-gray-700 rounded shadow-lg p-1 flex items-center gap-1 animate-in slide-in-from-top-2 duration-150">
+                    <div className="relative">
+                        <input
+                            autoFocus
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    if (e.shiftKey) searchAddonRef.current?.findPrevious(searchQuery);
+                                    else searchAddonRef.current?.findNext(searchQuery);
+                                }
+                            }}
+                            placeholder="Find..."
+                            className="bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs text-white w-32 focus:outline-none focus:border-indigo-500"
+                        />
+                        {searchQuery && (
+                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-500">
+                                {/* Potential: Add match count via onResult */}
+                            </span>
+                        )}
+                    </div>
+                    <div className="flex bg-gray-800 rounded border border-gray-700">
+                        <button
+                            onClick={() => searchAddonRef.current?.findPrevious(searchQuery)}
+                            className="p-1 hover:bg-gray-700 text-gray-400 hover:text-white border-r border-gray-700"
+                            title="Previous (Shift+Enter)"
+                        >
+                            <ChevronUp size={12} />
+                        </button>
+                        <button
+                            onClick={() => searchAddonRef.current?.findNext(searchQuery)}
+                            className="p-1 hover:bg-gray-700 text-gray-400 hover:text-white"
+                            title="Next (Enter)"
+                        >
+                            <ChevronDown size={12} />
+                        </button>
+                    </div>
+                    <button
+                        onClick={() => {
+                            setIsSearchOpen(false);
+                            setSearchQuery('');
+                            searchAddonRef.current?.clearDecorations();
+                            terminalRef.current?.focus();
+                        }}
+                        className="p-1 hover:bg-red-900/50 text-gray-500 hover:text-red-400 rounded transition-colors ml-1"
+                    >
+                        <X size={12} />
+                    </button>
+                </div>
+            )}
+        </div>
+    );
 };

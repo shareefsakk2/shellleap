@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useHostStore, Host } from '@/stores/hostStore';
 import { useIdentityStore } from '@/stores/identityStore';
-import { Monitor, Globe, User, Lock, Server, ArrowRight } from 'lucide-react';
+import { Monitor, Globe, User, Lock, Server, ArrowRight, Folder } from 'lucide-react';
 
 interface HostFormProps {
     onClose: () => void;
@@ -111,6 +111,20 @@ export function HostForm({ onClose, initialData }: HostFormProps) {
                                 <option key={g.id} value={g.id}>{g.name}</option>
                             ))}
                         </select>
+                    </div>
+                </div>
+
+                <div className="relative">
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Default Path (Optional)</label>
+                    <div className="relative">
+                        <Folder className="absolute left-3 top-2.5 text-gray-500 w-4 h-4" />
+                        <input
+                            type="text"
+                            value={formData.defaultPath || ''}
+                            onChange={(e) => setFormData({ ...formData, defaultPath: e.target.value })}
+                            className="w-full bg-gray-800/50 border border-gray-700 rounded-lg py-2 pl-9 pr-3 text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-sm font-medium font-mono"
+                            placeholder="/var/www/html"
+                        />
                     </div>
                 </div>
 
