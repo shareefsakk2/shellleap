@@ -89,9 +89,10 @@ export function setupSFTPHandlers() {
                 : resolvedConfig;
 
             await sftp.connect(connectOptions);
+            const cwd = await sftp.cwd();
 
             sftpSessions.set(id, { sftp, jumpConn });
-            return { success: true };
+            return { success: true, cwd };
         } catch (err: any) {
             console.error('SFTP Connect Error:', err);
             return { success: false, error: err.message };

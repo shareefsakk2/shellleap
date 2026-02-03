@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, protocol } from 'electron';
+import { app, BrowserWindow, ipcMain, protocol, nativeImage } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import { setupSSHHandlers } from './services/ssh';
@@ -16,6 +16,9 @@ if (app.isPackaged) {
 if (process.platform === 'linux') {
     app.commandLine.appendSwitch('ozone-platform-hint', 'auto');
     app.commandLine.appendSwitch('disable-gpu-vulkan');
+    // Fix icon association on Linux
+    // Matches the 'name' field in package.json + .desktop
+    (app as any).setDesktopName('shell-leap.desktop');
 }
 
 const hostname = 'localhost';
@@ -87,6 +90,7 @@ async function createWindow() {
     // app.getAppPath() points to project root in dev, and app.asar in prod
     const iconExt = process.platform === 'win32' ? 'ico' : 'png';
     const iconPath = path.join(app.getAppPath(), 'build', `icon.${iconExt}`);
+    const appIcon = nativeImage.createFromPath(iconPath);
 
     mainWindow = new BrowserWindow({
         width: 1200,
@@ -95,7 +99,7 @@ async function createWindow() {
         frame: false,
         backgroundColor: '#111827',
         show: false, // Don't show until ready
-        icon: iconPath,
+        icon: appIcon,
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
             nodeIntegration: false,

@@ -142,7 +142,13 @@ export const Terminal: React.FC<TerminalProps> = ({ hostId, sessionId, active = 
             }
 
             try {
-                const res = await window.electron.invoke('ssh-connect', { id: sessionId, config });
+                const dims = fitAddonRef.current?.proposeDimensions();
+                const options = {
+                    rows: dims?.rows || 24,
+                    cols: dims?.cols || 80,
+                    term: 'xterm-256color',
+                };
+                const res = await window.electron.invoke('ssh-connect', { id: sessionId, config, options });
 
                 if (!isMounted) return;
 

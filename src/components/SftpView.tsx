@@ -140,6 +140,8 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
         setStatus('Disconnecting...');
         await window.electron.invoke('sftp-disconnect', { id: sessionId });
         setStatus('Disconnected');
+        setRemoteFiles([]);
+        setRemotePath('.');
     };
 
     const connect = async () => {
@@ -184,7 +186,9 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
         if (res.success) {
             setStatus('Connected');
             // Re-list current path if re-attached, otherwise root
-            listRemote(sessionId, res.reattached ? remotePath : '.');
+            const initialPath = res.reattached ? remotePath : (res.cwd || '.');
+            setRemotePath(initialPath);
+            listRemote(sessionId, initialPath);
         } else {
             setStatus('Failed: ' + res.error);
         }
@@ -289,7 +293,13 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
             <div className="h-12 border-b border-gray-800 flex items-center px-4 gap-4 bg-gray-900">
                 <select
                     value={activeHostId}
-                    onChange={(e) => setActiveHostId(e.target.value)}
+                    onChange={async (e) => {
+                        const newId = e.target.value;
+                        if (status !== 'Disconnected') {
+                            await disconnect();
+                        }
+                        setActiveHostId(newId);
+                    }}
                     className="bg-gray-800 border border-gray-700 text-white rounded p-1 text-sm"
                 >
                     <option value="">Select Host...</option>

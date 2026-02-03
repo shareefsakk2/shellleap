@@ -15,6 +15,8 @@ async function connectClient(config: any, sock?: any): Promise<Client> {
                 ...config,
                 sock,
                 tryKeyboard: true,
+                keepaliveInterval: 10000,
+                keepaliveCountMax: 3,
                 debug: (str: string) => console.log(`[SSH-DEBUG] ${str}`)
             });
     });
@@ -46,7 +48,7 @@ export function setupSSHHandlers() {
         return newConfig;
     };
 
-    ipcMain.handle('ssh-connect', async (event, { id, config }) => {
+    ipcMain.handle('ssh-connect', async (event, { id, config, options }) => {
         try {
             // Re-use session if already connected
             if (sessions.has(id)) {
@@ -119,7 +121,9 @@ export function setupSSHHandlers() {
             }
 
             // Setup shell for the final connection
-            conn.shell({ term: 'xterm-256color' }, (err, stream) => {
+            // options should contain { rows, cols, term }
+            const shellOptions = options || { term: 'xterm-256color' };
+            conn.shell(shellOptions, (err, stream) => {
                 if (err) return;
 
                 (conn as any)._stream = stream;
