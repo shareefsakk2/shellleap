@@ -140,7 +140,9 @@ export function setupSFTPHandlers() {
         const session = sftpSessions.get(id);
         if (!session) return { success: false, error: 'No active session' };
         try {
-            await session.sftp.put(localPath, remotePath);
+            const fs = require('fs');
+            const stream = fs.createReadStream(localPath);
+            await session.sftp.put(stream, remotePath);
             return { success: true };
         } catch (err: any) {
             return { success: false, error: err.message };

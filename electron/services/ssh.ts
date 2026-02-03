@@ -53,6 +53,17 @@ export function setupSSHHandlers() {
             // Re-use session if already connected
             if (sessions.has(id)) {
                 console.log(`[SSH] Re-using existing session for ${id}`);
+                // Ensure dimensions are synced upon re-attachment
+                if (options && (options.rows || options.cols)) {
+                    const client = sessions.get(id);
+                    if (client && (client as any)._stream) {
+                        try {
+                            (client as any)._stream.setWindow(options.rows, options.cols, 0, 0);
+                        } catch (e) {
+                            console.warn('Failed to resize on re-attach:', e);
+                        }
+                    }
+                }
                 return { success: true, reattached: true };
             }
 
