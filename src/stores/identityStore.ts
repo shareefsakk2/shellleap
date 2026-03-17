@@ -7,7 +7,6 @@ export interface Identity {
     id: string;
     label: string;
     type: IdentityType;
-    username?: string; // Default username for this identity
     secret?: string; // Password or Private Key. Stored in-store for MVP (Insecure for prod, but sufficient for local dev tool prototype)
 }
 

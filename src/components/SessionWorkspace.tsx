@@ -4,9 +4,9 @@ import { useSessionStore } from '@/stores/sessionStore';
 import { useHostStore } from '@/stores/hostStore';
 import { Terminal } from '@/components/Terminal';
 import { SftpView } from '@/components/SftpView';
-import { X, Terminal as TerminalIcon, Folder, Plus, ChevronRight } from 'lucide-react';
+import { X, Terminal as TerminalIcon, Folder, Plus, ChevronRight, Copy, ArrowRightLeft } from 'lucide-react';
 import clsx from 'clsx';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 
 export function SessionWorkspace() {
@@ -15,6 +15,7 @@ export function SessionWorkspace() {
     const setActiveSession = useSessionStore((state) => state.setActiveSession);
     const removeSession = useSessionStore((state) => state.removeSession);
     const addSession = useSessionStore((state) => state.addSession);
+    const reorderSessions = useSessionStore((state) => state.reorderSessions);
     const hosts = useHostStore((state) => state.hosts);
 
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -24,6 +25,17 @@ export function SessionWorkspace() {
     const menuRef = useRef<HTMLDivElement>(null);
 
     const prevSessionsRef = useRef<typeof sessions>([]);
+
+    // Tab context menu state
+    const [tabContextMenu, setTabContextMenu] = useState<{ x: number; y: number; session: typeof sessions[0] } | null>(null);
+    const tabContextRef = useRef<HTMLDivElement>(null);
+
+    // Drag-drop reorder state
+    const [dragIndex, setDragIndex] = useState<number | null>(null);
+    const [dropIndex, setDropIndex] = useState<number | null>(null);
+
+    // Tab bar ref for wheel scroll
+    const tabBarRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         // Detect closed sessions and disconnect them in backend
@@ -54,6 +66,17 @@ export function SessionWorkspace() {
         };
         window.addEventListener('mousedown', handleClickOutside);
         return () => window.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    // Close tab context menu on click outside
+    useEffect(() => {
+        const handleClick = (e: MouseEvent) => {
+            if (tabContextRef.current && !tabContextRef.current.contains(e.target as Node)) {
+                setTabContextMenu(null);
+            }
+        };
+        window.addEventListener('mousedown', handleClick);
+        return () => window.removeEventListener('mousedown', handleClick);
     }, []);
 
     const handlePlusClick = () => {
@@ -88,6 +111,77 @@ export function SessionWorkspace() {
         setActiveSession(sessionId);
         setIsMenuOpen(false);
         setSelectedHost(null);
+    };
+
+    // Tab context menu: Duplicate tab
+    const handleDuplicateTab = (session: typeof sessions[0]) => {
+        const host = hosts.find((h: any) => h.id === session.hostId);
+        if (!host) return;
+        const sessionId = `${session.type}-${session.hostId}-${Date.now()}`;
+        addSession({
+            id: sessionId,
+            type: session.type,
+            hostId: session.hostId,
+            label: session.label,
+        });
+        setActiveSession(sessionId);
+        setTabContextMenu(null);
+    };
+
+    // Tab context menu: Open as other type
+    const handleOpenAsOtherType = (session: typeof sessions[0]) => {
+        const host = hosts.find((h: any) => h.id === session.hostId);
+        if (!host) return;
+        const newType = session.type === 'ssh' ? 'sftp' : 'ssh';
+        const sessionId = `${newType}-${session.hostId}-${Date.now()}`;
+        addSession({
+            id: sessionId,
+            type: newType,
+            hostId: session.hostId,
+            label: newType === 'sftp' ? 'SFTP: ' + host.label : host.label,
+        });
+        setActiveSession(sessionId);
+        setTabContextMenu(null);
+    };
+
+    // Tab bar wheel scroll
+    const handleTabBarWheel = useCallback((e: React.WheelEvent) => {
+        if (tabBarRef.current) {
+            e.preventDefault();
+            tabBarRef.current.scrollLeft += e.deltaY;
+        }
+    }, []);
+
+    // Drag-drop handlers
+    const handleTabDragStart = (e: React.DragEvent, index: number) => {
+        setDragIndex(index);
+        e.dataTransfer.effectAllowed = 'move';
+        // Use a transparent drag image
+        const ghost = document.createElement('div');
+        ghost.style.opacity = '0';
+        document.body.appendChild(ghost);
+        e.dataTransfer.setDragImage(ghost, 0, 0);
+        setTimeout(() => document.body.removeChild(ghost), 0);
+    };
+
+    const handleTabDragOver = (e: React.DragEvent, index: number) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        setDropIndex(index);
+    };
+
+    const handleTabDrop = (e: React.DragEvent, index: number) => {
+        e.preventDefault();
+        if (dragIndex !== null && dragIndex !== index) {
+            reorderSessions(dragIndex, index);
+        }
+        setDragIndex(null);
+        setDropIndex(null);
+    };
+
+    const handleTabDragEnd = () => {
+        setDragIndex(null);
+        setDropIndex(null);
     };
 
     // If no sessions, show empty state
@@ -162,16 +256,31 @@ export function SessionWorkspace() {
     return (
         <div className="flex flex-col h-full bg-black">
             {/* Tabs Bar */}
-            <div className="flex items-center gap-2 px-3 py-2 bg-black border-b border-[#1C1C1E] overflow-x-auto no-scrollbar">
-                {sessions.map((session) => (
+            <div
+                ref={tabBarRef}
+                onWheel={handleTabBarWheel}
+                className="flex items-center gap-2 px-3 py-2 bg-black border-b border-[#1C1C1E] overflow-x-auto no-scrollbar"
+            >
+                {sessions.map((session, index) => (
                     <div
                         key={session.id}
+                        draggable
+                        onDragStart={(e) => handleTabDragStart(e, index)}
+                        onDragOver={(e) => handleTabDragOver(e, index)}
+                        onDrop={(e) => handleTabDrop(e, index)}
+                        onDragEnd={handleTabDragEnd}
                         onClick={() => setActiveSession(session.id)}
+                        onContextMenu={(e) => {
+                            e.preventDefault();
+                            setTabContextMenu({ x: e.clientX, y: e.clientY, session });
+                        }}
                         className={clsx(
                             "flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg cursor-pointer min-w-[140px] max-w-[200px] select-none group transition-all shrink-0",
                             activeSessionId === session.id
                                 ? "bg-[#1C1C1E] text-[#E5E5EA]"
-                                : "bg-transparent text-[#8E8E93] hover:bg-[#1C1C1E]/50"
+                                : "bg-transparent text-[#8E8E93] hover:bg-[#1C1C1E]/50",
+                            dragIndex === index && "opacity-40",
+                            dropIndex === index && dragIndex !== null && dragIndex !== index && "border-l-2 border-blue-500"
                         )}
                     >
                         <div className={clsx(
@@ -249,6 +358,31 @@ export function SessionWorkspace() {
                             </div>
                         ))
                     )}
+                </div>,
+                document.body
+            )}
+
+            {/* Tab Context Menu Portal */}
+            {tabContextMenu && createPortal(
+                <div
+                    ref={tabContextRef}
+                    className="fixed z-[100] bg-[#1C1C1E] border border-[#2C2C2E] rounded-xl shadow-2xl py-1 min-w-[180px] animate-in fade-in zoom-in duration-100"
+                    style={{ left: tabContextMenu.x, top: tabContextMenu.y }}
+                >
+                    <button
+                        onClick={() => handleDuplicateTab(tabContextMenu.session)}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[#E5E5EA] hover:bg-[#2C2C2E] transition-colors"
+                    >
+                        <Copy size={14} className="text-[#8E8E93]" />
+                        <span>Duplicate Tab</span>
+                    </button>
+                    <button
+                        onClick={() => handleOpenAsOtherType(tabContextMenu.session)}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[#E5E5EA] hover:bg-[#2C2C2E] transition-colors"
+                    >
+                        <ArrowRightLeft size={14} className="text-[#8E8E93]" />
+                        <span>Open as {tabContextMenu.session.type === 'ssh' ? 'SFTP' : 'SSH'}</span>
+                    </button>
                 </div>,
                 document.body
             )}

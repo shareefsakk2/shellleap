@@ -8,6 +8,7 @@ export function StatusBar() {
     const sessions = useSessionStore((state) => state.sessions);
     const [currentTime, setCurrentTime] = useState(new Date());
     const [uptime, setUptime] = useState(0);
+    const [appVersion, setAppVersion] = useState('...');
 
     // Count session types
     const sshCount = sessions.filter(s => s.type === 'ssh').length;
@@ -19,6 +20,10 @@ export function StatusBar() {
             setUptime(prev => prev + 1);
         }, 1000);
         return () => clearInterval(timer);
+    }, []);
+
+    useEffect(() => {
+        window.electron.invoke('get-app-version').then((v: string) => setAppVersion(v)).catch(() => { });
     }, []);
 
     const formatUptime = (seconds: number) => {
@@ -48,7 +53,7 @@ export function StatusBar() {
                 </div>
 
                 {/* Version */}
-                <span className="text-[#505055]">v0.1.1</span>
+                <span className="text-[#505055]">v{appVersion}</span>
 
                 {/* Session counts */}
                 {(sshCount > 0 || sftpCount > 0) && (

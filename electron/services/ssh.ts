@@ -141,11 +141,11 @@ export function setupSSHHandlers() {
 
                 stream.on('data', (data: Buffer) => {
                     const str = data.toString();
-                    // Keep a small buffer for re-attachment (100KB limit)
+                    // Keep a buffer for re-attachment (5MB limit)
                     let currentBuffer = buffers.get(id) || '';
                     currentBuffer += str;
-                    if (currentBuffer.length > 102400) {
-                        currentBuffer = currentBuffer.substring(currentBuffer.length - 102400);
+                    if (currentBuffer.length > 5242880) {
+                        currentBuffer = currentBuffer.substring(currentBuffer.length - 5242880);
                     }
                     buffers.set(id, currentBuffer);
 

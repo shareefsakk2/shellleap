@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useIdentityStore, Identity, IdentityType } from '@/stores/identityStore';
-import { Key, Lock, User, Tag } from 'lucide-react';
+import { Key, Lock, Tag } from 'lucide-react';
 
 interface IdentityFormProps {
     onClose: () => void;
@@ -16,7 +16,6 @@ export function IdentityForm({ onClose, initialData }: IdentityFormProps) {
     const [formData, setFormData] = useState<Partial<Identity>>(
         initialData || {
             label: '',
-            username: '',
             type: 'password',
         }
     );
@@ -29,7 +28,6 @@ export function IdentityForm({ onClose, initialData }: IdentityFormProps) {
 
         const identityData = {
             label: formData.label!,
-            username: formData.username,
             type: formData.type as IdentityType,
             secret: secret,
         };
@@ -63,34 +61,18 @@ export function IdentityForm({ onClose, initialData }: IdentityFormProps) {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="relative">
+                    <label className="text-xs font-bold text-[#8E8E93] uppercase tracking-wider mb-1.5 block">Type</label>
                     <div className="relative">
-                        <label className="text-xs font-bold text-[#8E8E93] uppercase tracking-wider mb-1.5 block">Type</label>
-                        <div className="relative">
-                            <Lock className="absolute left-3 top-3 text-[#505055] w-4 h-4" />
-                            <select
-                                value={formData.type}
-                                onChange={(e) => setFormData({ ...formData, type: e.target.value as IdentityType })}
-                                className="w-full bg-black border border-[#2C2C2E] rounded-xl py-2.5 pl-9 pr-3 text-white focus:outline-none focus:ring-1 focus:ring-white/20 focus:border-white/40 transition-all appearance-none text-sm"
-                            >
-                                <option value="password">Password</option>
-                                <option value="key">Key</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div className="relative">
-                        <label className="text-xs font-bold text-[#8E8E93] uppercase tracking-wider mb-1.5 block">Username</label>
-                        <div className="relative">
-                            <User className="absolute left-3 top-3 text-[#505055] w-4 h-4" />
-                            <input
-                                type="text"
-                                value={formData.username}
-                                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                                className="w-full bg-black border border-[#2C2C2E] rounded-xl py-2.5 pl-9 pr-3 text-white placeholder-[#505055] focus:outline-none focus:ring-1 focus:ring-white/20 focus:border-white/40 transition-all text-sm font-medium"
-                                placeholder="ubuntu"
-                            />
-                        </div>
+                        <Lock className="absolute left-3 top-3 text-[#505055] w-4 h-4" />
+                        <select
+                            value={formData.type}
+                            onChange={(e) => setFormData({ ...formData, type: e.target.value as IdentityType })}
+                            className="w-full bg-black border border-[#2C2C2E] rounded-xl py-2.5 pl-9 pr-3 text-white focus:outline-none focus:ring-1 focus:ring-white/20 focus:border-white/40 transition-all appearance-none text-sm"
+                        >
+                            <option value="password">Password</option>
+                            <option value="key">Key</option>
+                        </select>
                     </div>
                 </div>
 

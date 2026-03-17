@@ -29,7 +29,7 @@ export function HostForm({ onClose, initialData }: HostFormProps) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (initialData) {
+        if (initialData?.id) {
             updateHost(initialData.id, formData);
         } else {
             addHost({

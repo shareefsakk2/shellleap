@@ -123,6 +123,8 @@ async function createWindow() {
     });
     ipcMain.handle('window-close', () => mainWindow?.close());
 
+    // App info
+    ipcMain.handle('get-app-version', () => app.getVersion());
 
     // Load content
     if (!app.isPackaged) {

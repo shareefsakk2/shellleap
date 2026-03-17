@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useHostStore } from '@/stores/hostStore';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useSettingsStore } from '@/stores/settingsStore';
@@ -9,6 +9,9 @@ import { Modal } from '@/components/Modal';
 import { HostForm } from '@/components/HostForm';
 import { ContextMenu } from '@/components/ContextMenu';
 import { useRouter } from 'next/navigation';
+
+// Module-level variable to persist scroll position across remounts
+let savedScrollPosition = 0;
 
 export default function HostsPage() {
     const [mounted, setMounted] = useState(false);
@@ -32,6 +35,20 @@ export default function HostsPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [groupName, setGroupName] = useState('');
     const [deleteConfirm, setDeleteConfirm] = useState<{ type: 'host' | 'group', id: string, name: string } | null>(null);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+    // Restore scroll position on mount
+    useEffect(() => {
+        if (scrollContainerRef.current && savedScrollPosition > 0) {
+            scrollContainerRef.current.scrollTop = savedScrollPosition;
+        }
+    }, [mounted]);
+
+    const handleScroll = () => {
+        if (scrollContainerRef.current) {
+            savedScrollPosition = scrollContainerRef.current.scrollTop;
+        }
+    };
 
     const handleAddGroupSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -193,7 +210,7 @@ export default function HostsPage() {
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-8 pb-8 custom-scrollbar">
+            <div ref={scrollContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto px-8 pb-8 custom-scrollbar">
                 {hosts.length === 0 && groups.length === 0 ? (
                     <div className="text-center text-[#8E8E93] mt-20">
                         <Monitor size={48} className="mx-auto mb-4 opacity-20" />
@@ -266,7 +283,7 @@ export default function HostsPage() {
             <Modal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
-                title={editingHost ? "Edit Host" : "New Host"}
+                title={editingHost?.id ? "Edit Host" : "New Host"}
             >
                 <HostForm
                     initialData={editingHost}

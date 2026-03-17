@@ -32,6 +32,8 @@ export const Terminal: React.FC<TerminalProps> = ({ hostId, sessionId, active = 
 
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [matchIndex, setMatchIndex] = useState(-1);
+    const [matchCount, setMatchCount] = useState(0);
 
     // Get settings from store
     const terminalSettings = useSettingsStore((state) => state.settings.terminal);
@@ -58,6 +60,7 @@ export const Terminal: React.FC<TerminalProps> = ({ hostId, sessionId, active = 
             fontSize: terminalSettings.fontSize,
             cursorBlink: terminalSettings.cursorBlink,
             cursorStyle: terminalSettings.cursorStyle,
+            scrollback: 10000,
             allowProposedApi: true,
         });
 
@@ -67,6 +70,12 @@ export const Terminal: React.FC<TerminalProps> = ({ hostId, sessionId, active = 
         term.loadAddon(fitAddon);
         term.loadAddon(new WebLinksAddon());
         term.loadAddon(searchAddon);
+
+        // Listen for search result changes
+        searchAddon.onDidChangeResults((e: { resultIndex: number; resultCount: number }) => {
+            setMatchIndex(e.resultIndex);
+            setMatchCount(e.resultCount);
+        });
 
         term.open(containerRef.current);
         fitAddon.fit();
@@ -200,9 +209,8 @@ export const Terminal: React.FC<TerminalProps> = ({ hostId, sessionId, active = 
     useEffect(() => {
         if (!searchAddonRef.current) return;
         if (searchQuery) {
-            // Use findNext with decoration options to highlight all
-            searchAddonRef.current.findNext(searchQuery, {
-                incremental: true,
+            // Use findPrevious for bottom-first search
+            searchAddonRef.current.findPrevious(searchQuery, {
                 decorations: {
                     matchOverviewRuler: '#d1d5db',
                     activeMatchColorOverviewRuler: '#ffff00',
@@ -212,6 +220,8 @@ export const Terminal: React.FC<TerminalProps> = ({ hostId, sessionId, active = 
             });
         } else {
             searchAddonRef.current.clearDecorations();
+            setMatchIndex(-1);
+            setMatchCount(0);
         }
     }, [searchQuery]);
 
@@ -373,31 +383,32 @@ export const Terminal: React.FC<TerminalProps> = ({ hostId, sessionId, active = 
                             onChange={(e) => setSearchQuery(e.target.value)}
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter') {
-                                    if (e.shiftKey) searchAddonRef.current?.findPrevious(searchQuery);
-                                    else searchAddonRef.current?.findNext(searchQuery);
+                                    // Enter = search upward (previous), Shift+Enter = search downward (next)
+                                    if (e.shiftKey) searchAddonRef.current?.findNext(searchQuery);
+                                    else searchAddonRef.current?.findPrevious(searchQuery);
                                 }
                             }}
                             placeholder="Find in terminal..."
                             className="bg-black border border-[#2C2C2E] rounded-lg px-3 py-1.5 text-xs text-[#E5E5EA] w-40 focus:outline-none focus:ring-1 focus:ring-white/20"
                         />
                         {searchQuery && (
-                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-500">
-                                {/* Potential: Add match count via onResult */}
+                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 font-mono">
+                                {matchCount > 0 ? `${matchIndex + 1} of ${matchCount}` : 'No matches'}
                             </span>
                         )}
                     </div>
                     <div className="flex bg-[#0A0A0A] rounded-lg border border-[#2C2C2E]">
                         <button
-                            onClick={() => searchAddonRef.current?.findPrevious(searchQuery)}
+                            onClick={() => searchAddonRef.current?.findNext(searchQuery)}
                             className="p-1.5 hover:bg-[#2C2C2E] text-[#8E8E93] hover:text-white rounded-l-lg transition-colors border-r border-[#2C2C2E]"
-                            title="Previous (Shift+Enter)"
+                            title="Next (Shift+Enter)"
                         >
                             <ChevronUp size={14} />
                         </button>
                         <button
-                            onClick={() => searchAddonRef.current?.findNext(searchQuery)}
+                            onClick={() => searchAddonRef.current?.findPrevious(searchQuery)}
                             className="p-1.5 hover:bg-[#2C2C2E] text-[#8E8E93] hover:text-white rounded-r-lg transition-colors"
-                            title="Next (Enter)"
+                            title="Previous (Enter)"
                         >
                             <ChevronDown size={14} />
                         </button>

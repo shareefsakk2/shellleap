@@ -15,6 +15,7 @@ interface SessionState {
     addSession: (session: Session) => void;
     removeSession: (id: string) => void;
     setActiveSession: (id: string) => void;
+    reorderSessions: (fromIndex: number, toIndex: number) => void;
 }
 
 import { persist, createJSONStorage } from 'zustand/middleware';
@@ -46,6 +47,13 @@ export const useSessionStore = create<SessionState>()(
             }),
 
             setActiveSession: (id) => set({ activeSessionId: id }),
+
+            reorderSessions: (fromIndex, toIndex) => set((state) => {
+                const newSessions = [...state.sessions];
+                const [moved] = newSessions.splice(fromIndex, 1);
+                newSessions.splice(toIndex, 0, moved);
+                return { sessions: newSessions };
+            }),
         }),
         {
             name: 'session-storage',

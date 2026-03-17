@@ -64,7 +64,7 @@ export default function KeychainPage() {
                     </div>
                 ) : (
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                        {identities.filter((identity: any) => identity.label.toLowerCase().includes(searchQuery.toLowerCase()) || (identity.username && identity.username.toLowerCase().includes(searchQuery.toLowerCase()))).map((identity: any) => (
+                        {identities.filter((identity: any) => identity.label.toLowerCase().includes(searchQuery.toLowerCase())).map((identity: any) => (
                             <div
                                 key={identity.id}
                                 className="group relative bg-[#09090b] border border-[#1C1C1E] rounded-2xl p-6 transition-all duration-300 hover:border-[#3A3A3C] hover:shadow-2xl h-[180px] flex flex-col justify-between overflow-hidden"
@@ -100,7 +100,6 @@ export default function KeychainPage() {
                                         <h3 className="font-bold text-[#E5E5EA] text-lg tracking-tight">{identity.label}</h3>
                                         <div className="flex items-center gap-2 mt-1">
                                             <span className="text-[10px] font-bold uppercase tracking-wider bg-[#1C1C1E] text-[#8E8E93] px-1.5 py-0.5 rounded">{identity.type}</span>
-                                            <span className="text-sm text-[#8E8E93] font-mono">{identity.username || 'No user'}</span>
                                         </div>
                                     </div>
                                 </div>

@@ -37,7 +37,8 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
     const sessionId = propSessionId;
 
     const [localPath, setLocalPath] = useState(sftpSettings.defaultLocalPath || ''); // Use setting
-    const [remotePath, setRemotePath] = useState('.');
+    const [remotePath, setRemotePath] = useState('.'); // Actual current valid path
+    const [remotePathInput, setRemotePathInput] = useState('.'); // Input field value (may differ while typing)
 
     const [localFiles, setLocalFiles] = useState<FileEntry[]>([]);
     const [remoteFiles, setRemoteFiles] = useState<FileEntry[]>([]);
@@ -175,17 +176,21 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
             if (res.success) {
                 setRemoteFiles(res.data);
                 setRemotePath(path);
+                setRemotePathInput(path);
             } else {
                 console.error(res.error);
                 if (res.error === 'No active session') {
                     setStatus('Disconnected');
-                    // Do not clear sessionId, as it is a prop now. Just show disconnected.
                 } else {
                     setStatus('Error: ' + res.error);
+                    // Revert input to last valid path
+                    setRemotePathInput(remotePath);
                 }
             }
         } catch (e) {
             console.error(e);
+            setStatus('Error: Failed to list remote path');
+            setRemotePathInput(remotePath);
         }
     };
 
@@ -196,6 +201,7 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
         setStatus('Disconnected');
         setRemoteFiles([]);
         setRemotePath('.');
+        setRemotePathInput('.');
     };
 
     const connect = async () => {
@@ -249,6 +255,7 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
             // Re-list current path if re-attached, otherwise root
             const initialPath = res.reattached ? remotePath : (host.defaultPath ? host.defaultPath : (res.cwd || '.'));
             setRemotePath(initialPath);
+            setRemotePathInput(initialPath);
             listRemote(sessionId, initialPath);
         } else {
             setStatus('Failed: ' + res.error);
@@ -257,7 +264,7 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
 
     const handleRemotePathKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter') {
-            listRemote(sessionId, remotePath);
+            listRemote(sessionId, remotePathInput);
         }
     };
 
@@ -457,12 +464,12 @@ export function SftpView({ initialHostId, sessionId: propSessionId }: SftpViewPr
                             <ArrowLeft size={14} className="rotate-90" />
                         </button>
                         <input
-                            value={remotePath}
-                            onChange={(e) => setRemotePath(e.target.value)}
+                            value={remotePathInput}
+                            onChange={(e) => setRemotePathInput(e.target.value)}
                             onKeyDown={handleRemotePathKeyDown}
                             className="flex-1 bg-[#1C1C1E] text-xs font-mono text-[#E5E5EA] px-3 py-1.5 rounded-lg focus:outline-none focus:ring-1 focus:ring-white/20"
                         />
-                        <button onClick={() => sessionId && listRemote(sessionId, remotePath)} className="text-[#8E8E93] hover:text-white transition-colors p-1.5 hover:bg-[#1C1C1E] rounded-lg" title="Refresh">
+                        <button onClick={() => sessionId && listRemote(sessionId, remotePathInput)} className="text-[#8E8E93] hover:text-white transition-colors p-1.5 hover:bg-[#1C1C1E] rounded-lg" title="Refresh">
                             <RefreshCw size={14} />
                         </button>
                     </div>
