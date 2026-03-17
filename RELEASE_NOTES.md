@@ -1,3 +1,31 @@
+# 🚀 ShellLeap v0.1.3 - Power User Features & Refinements
+
+Welcome to **ShellLeap v0.1.3**! This release brings a suite of powerful tab management features, terminal enhancements, and critical UX fixes to streamline your workflow.
+
+### ✨ What's New
+*   **📂 Advanced Tab Management**:
+    *   **Context Menu**: Right-click tabs to Duplicate or quickly switch between SSH/SFTP.
+    *   **Drag & Drop**: Reorder your session tabs with a smooth, intuitive interface.
+    *   **Wheel Scrolling**: Experience effortless navigation with horizontal mouse wheel support for the tab bar.
+*   **💻 Terminal Power-Ups**:
+    *   **Bottom-Up Search**: Terminal search now starts from your current position (bottom) for instant context.
+    *   **Match Count**: Know exactly where you are with "X of Y" match indicators.
+    *   **Massive Buffers**: Increased re-attachment buffer to 5MB and scrollback to 10,000 lines for heavy-duty sessions.
+*   **🛠️ SFTP Path Validation**: Added smart path handling that reverts to the last known valid directory on input errors, preventing navigation loss.
+*   **📍 View Persistence**: Host page scroll position is now remembered, so you don't lose your place when switching views.
+
+### 🛠️ Fixes & Improvements
+*   **Dynamic Versioning**: The app version is now fetched dynamically, ensuring accuracy in the status bar.
+*   **Keychain Cleanup**: Removed redundant username fields from the Identity model to simplify credential management.
+*   **Host Creation Fix**: Resolved an issue where "Add Host to Group" incorrectly entered edit mode.
+
+### 📦 Installation
+- **Windows**: Download and run the `.exe` installer.
+- **macOS**: Download the `.dmg`, open it, and drag ShellLeap to your Applications folder.
+- **Linux**: Download the `.deb` and install via `sudo apt install ./shell-leap_0.1.3_amd64.deb`.
+
+---
+
 # 🚀 ShellLeap v0.1.2 - UI Polish & Quality of Life
 
 We're thrilled to release **ShellLeap v0.1.2**, focused on visual refinements and usability improvements across the application.
